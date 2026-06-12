@@ -1,0 +1,130 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    @apply bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 antialiased transition-colors duration-300;
+  }
+}
+
+/* === Scrollbar global delgada y acorde al tema === */
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.35) transparent;
+}
+
+/* WebKit (Chrome, Edge, Safari) */
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: rgba(148, 163, 184, 0.3);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(175, 33, 84, 0.55);
+}
+
+/* En modo oscuro, un poco más visible */
+.dark *::-webkit-scrollbar-thumb {
+  background-color: rgba(148, 163, 184, 0.25);
+}
+.dark *::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(175, 33, 84, 0.6);
+}
+
+/* Esquina donde se cruzan los dos scrollbars: que se vea limpia */
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+@layer components {
+  .btn-primary {
+    @apply w-full bg-primary-500 hover:bg-primary-600 active:bg-primary-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-md hover:shadow-lg;
+  }
+
+  .input-field {
+    @apply w-full border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm
+           text-gray-800 dark:text-gray-100
+           placeholder-gray-400 dark:placeholder-gray-500
+           focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent
+           transition-all duration-200
+           bg-gray-50 dark:bg-gray-800
+           focus:bg-white dark:focus:bg-gray-700;
+  }
+
+  .input-label {
+    @apply block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5;
+  }
+}
+
+/* Animacion de entrada */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in-up {
+  animation: fadeInUp 0.5s ease-out forwards;
+}
+
+/* Shapes decorativas del panel derecho */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-12px); }
+}
+.animate-float       { animation: float 4s ease-in-out infinite; }
+.animate-float-delay { animation: float 4s ease-in-out 1.5s infinite; }
+
+/* === Cielo estrellado del LoginBranding === */
+@keyframes twinkle {
+  0%, 100% { opacity: 0.85; }
+  50%      { opacity: 0.35; }
+}
+@keyframes drift {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(-40px, -20px, 0); }
+}
+
+.stars-layer,
+.stars-layer-2 {
+  background-repeat: repeat;
+  background-size: 300px 300px;
+  will-change: transform, opacity;
+}
+
+.stars-layer {
+  background-image:
+    radial-gradient(1.2px 1.2px at 20px 30px,  rgba(255,255,255,0.95), transparent),
+    radial-gradient(1px   1px   at 60px 110px, rgba(255,255,255,0.7),  transparent),
+    radial-gradient(1.4px 1.4px at 130px 70px, rgba(255,255,255,0.85), transparent),
+    radial-gradient(1px   1px   at 200px 200px, rgba(255,255,255,0.6),  transparent),
+    radial-gradient(1.2px 1.2px at 250px 50px, rgba(255,255,255,0.8),  transparent),
+    radial-gradient(1px   1px   at 90px 250px, rgba(255,255,255,0.55), transparent),
+    radial-gradient(1.5px 1.5px at 170px 270px, rgba(245,130,39,0.7),  transparent);
+  animation: twinkle 4s ease-in-out infinite, drift 90s linear infinite;
+}
+
+.stars-layer-2 {
+  background-size: 450px 450px;
+  background-image:
+    radial-gradient(1px   1px   at 50px 80px,   rgba(255,255,255,0.5), transparent),
+    radial-gradient(1.2px 1.2px at 220px 150px, rgba(175,33,84,0.8),   transparent),
+    radial-gradient(1px   1px   at 320px 60px,  rgba(255,255,255,0.7), transparent),
+    radial-gradient(1.4px 1.4px at 100px 320px, rgba(255,255,255,0.6), transparent),
+    radial-gradient(1px   1px   at 380px 380px, rgba(255,255,255,0.55),transparent),
+    radial-gradient(1.3px 1.3px at 280px 280px, rgba(245,130,39,0.6),  transparent);
+  animation: twinkle 6s ease-in-out 1s infinite, drift 140s linear reverse infinite;
+}

@@ -1,0 +1,37 @@
+server:
+  port: ${PORT:8080}
+
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/ssoma_db}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:root}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  jackson:
+    time-zone: America/Lima
+    date-format: yyyy-MM-dd HH:mm:ss
+
+app:
+  jwt:
+    # Valor SOLO para desarrollo local (inseguro a proposito).
+    # En produccion (Render) se DEBE definir APP_JWT_SECRET como variable de entorno con un secreto real en Base64.
+    secret: ${APP_JWT_SECRET:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA}
+    expiration: ${APP_JWT_EXPIRATION:86400000}
+  anthropic:
+    # Se define como variable de entorno ANTHROPIC_API_KEY (local y en Render). Nunca escribir la clave aqui.
+    api-key: ${ANTHROPIC_API_KEY:}
+
+logging:
+  level:
+    com.aleri.ssoma: DEBUG
+    org.springframework.security: INFO
