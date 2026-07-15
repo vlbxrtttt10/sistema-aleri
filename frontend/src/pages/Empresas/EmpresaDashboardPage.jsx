@@ -2,23 +2,119 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   Building2, ArrowLeft, Crown, Shield, Star,
-  Construction, AlertCircle
+  AlertCircle, Users, UserCheck, ChevronDown, ChevronUp
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../../services/api.js'
 import { useTheme } from '../../context/ThemeContext.jsx'
 import { isAdmin } from '../../services/session.js'
 
-const PLAN_ICON = { BASICO: Shield, VIP: Crown, ALERI: Star }
+const PLAN_ICON  = { BASICO: Shield, VIP: Crown, ALERI: Star }
 const PLAN_COLOR = { BASICO: '#6b7280', VIP: '#af2154', ALERI: '#83266d' }
 
+function Badge({ children, color }) {
+  return (
+    <span
+      className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold"
+      style={{ backgroundColor: color + '22', color }}
+    >
+      {children}
+    </span>
+  )
+}
+
+function SupervisorRow({ sup, colaboradores, dark, cardBg, cardBorder, titleColor, subColor }) {
+  const [open, setOpen] = useState(false)
+  const misCols = colaboradores.filter(c => c.supervisorId === sup.id)
+
+  return (
+    <div
+      className="rounded-xl border overflow-hidden"
+      style={{ borderColor: cardBorder, backgroundColor: cardBg }}
+    >
+      {/* Cabecera del supervisor */}
+      <button
+        className="w-full flex items-center gap-3 px-4 py-3 text-left transition-colors"
+        style={{ backgroundColor: 'transparent' }}
+        onMouseEnter={e => e.currentTarget.style.backgroundColor = dark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)'}
+        onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+        onClick={() => setOpen(o => !o)}
+      >
+        <div
+          className="w-9 h-9 rounded-lg flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
+          style={{ backgroundColor: '#af2154' }}
+        >
+          {sup.nombre.charAt(0).toUpperCase()}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold truncate" style={{ color: titleColor }}>{sup.nombre}</p>
+          <p className="text-xs truncate" style={{ color: subColor }}>
+            {sup.cargo || 'Supervisor'}{sup.area ? ` · ${sup.area}` : ''}
+          </p>
+        </div>
+        <div className="flex items-center gap-3 flex-shrink-0">
+          <Badge color={sup.activo ? '#10b981' : '#ef4444'}>
+            {sup.activo ? 'Activo' : 'Inactivo'}
+          </Badge>
+          <span className="text-xs font-medium px-2 py-1 rounded-lg" style={{ backgroundColor: dark ? '#334155' : '#f1f5f9', color: subColor }}>
+            {misCols.length} colab.
+          </span>
+          {open
+            ? <ChevronUp size={15} style={{ color: subColor }} />
+            : <ChevronDown size={15} style={{ color: subColor }} />
+          }
+        </div>
+      </button>
+
+      {/* Colaboradores del supervisor (expandible) */}
+      {open && (
+        <div style={{ borderTop: `1px solid ${cardBorder}` }}>
+          {misCols.length === 0 ? (
+            <p className="px-5 py-3 text-xs" style={{ color: subColor }}>Sin colaboradores asignados.</p>
+          ) : (
+            <table className="w-full text-xs">
+              <thead>
+                <tr style={{ backgroundColor: dark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)' }}>
+                  {['Nombre', 'DNI', 'Cargo', 'Área', 'Ingreso'].map(h => (
+                    <th key={h} className="px-4 py-2 text-left font-semibold uppercase tracking-wider"
+                      style={{ color: subColor }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {misCols.map((c, i) => (
+                  <tr
+                    key={c.id}
+                    style={{ borderTop: i > 0 ? `1px solid ${cardBorder}` : 'none' }}
+                  >
+                    <td className="px-4 py-2.5 font-medium" style={{ color: titleColor }}>{c.nombre}</td>
+                    <td className="px-4 py-2.5" style={{ color: subColor }}>{c.dni || '—'}</td>
+                    <td className="px-4 py-2.5" style={{ color: subColor }}>{c.cargo || '—'}</td>
+                    <td className="px-4 py-2.5" style={{ color: subColor }}>{c.area || '—'}</td>
+                    <td className="px-4 py-2.5" style={{ color: subColor }}>
+                      {c.fechaIngreso
+                        ? new Date(c.fechaIngreso).toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' })
+                        : '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function EmpresaDashboardPage() {
-  const { id } = useParams()
-  const navigate = useNavigate()
-  const { dark } = useTheme()
-  const [empresa, setEmpresa] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError]     = useState(null)
+  const { id }     = useParams()
+  const navigate   = useNavigate()
+  const { dark }   = useTheme()
+  const [empresa,  setEmpresa]  = useState(null)
+  const [equipo,   setEquipo]   = useState(null)
+  const [loading,  setLoading]  = useState(true)
+  const [error,    setError]    = useState(null)
 
   useEffect(() => {
     if (!isAdmin()) {
@@ -26,8 +122,14 @@ export default function EmpresaDashboardPage() {
       navigate('/dashboard')
       return
     }
-    api.get(`/empresas/${id}`)
-      .then(res => setEmpresa(res.data))
+    Promise.all([
+      api.get(`/empresas/${id}`),
+      api.get(`/empresas/${id}/equipo`),
+    ])
+      .then(([empRes, equipoRes]) => {
+        setEmpresa(empRes.data)
+        setEquipo(equipoRes.data)
+      })
       .catch(err => {
         const msg = err.response?.data?.mensaje || 'No se pudo cargar la empresa'
         setError(msg)
@@ -63,8 +165,10 @@ export default function EmpresaDashboardPage() {
     )
   }
 
-  const PlanIcon = PLAN_ICON[empresa.planNombre] || Shield
+  const PlanIcon  = PLAN_ICON[empresa.planNombre]  || Shield
   const planColor = PLAN_COLOR[empresa.planNombre] || '#6b7280'
+  const supervisores  = equipo?.supervisores  || []
+  const colaboradores = equipo?.colaboradores || []
 
   return (
     <div className="space-y-6">
@@ -83,10 +187,8 @@ export default function EmpresaDashboardPage() {
       <div
         className="relative rounded-2xl overflow-hidden px-7 py-6"
         style={{ background: 'linear-gradient(135deg, #af2154 0%, #83266d 50%, #f58227 100%)' }}>
-
         <div className="absolute top-0 right-0 w-64 h-64 rounded-full opacity-10"
           style={{ background: 'radial-gradient(circle, #ffffff 0%, transparent 70%)', transform: 'translate(30%, -40%)' }} />
-
         <div className="relative flex items-center gap-5 flex-wrap">
           <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-white text-2xl font-extrabold flex-shrink-0"
             style={{ backgroundColor: 'rgba(255,255,255,0.18)', backdropFilter: 'blur(8px)' }}>
@@ -102,12 +204,39 @@ export default function EmpresaDashboardPage() {
             <h1 className="text-2xl font-bold text-white truncate">{empresa.nombre}</h1>
             <p className="text-white/65 text-sm mt-0.5">RUC {empresa.ruc}</p>
           </div>
-          <div className="px-4 py-2 rounded-xl text-center"
-            style={{ backgroundColor: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)' }}>
-            <p className="text-white/60 text-[10px] uppercase tracking-wider">Plan</p>
-            <div className="flex items-center gap-1.5 mt-0.5">
-              <PlanIcon size={14} className="text-white" />
-              <span className="text-white text-sm font-semibold">{empresa.planNombre}</span>
+          {/* Contadores rápidos en el banner */}
+          <div className="flex gap-3">
+            <div className="px-4 py-2 rounded-xl text-center"
+              style={{ backgroundColor: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)' }}>
+              <p className="text-white/60 text-[10px] uppercase tracking-wider">Supervisores</p>
+              <p className="text-white text-lg font-bold leading-none mt-1">
+                {supervisores.length}
+                <span className="text-white/50 text-xs font-normal">
+                  {empresa.planMaxSupervisores != null
+                    ? `/${empresa.planMaxSupervisores} sup.`
+                    : '/∞'}
+                </span>
+              </p>
+            </div>
+            <div className="px-4 py-2 rounded-xl text-center"
+              style={{ backgroundColor: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)' }}>
+              <p className="text-white/60 text-[10px] uppercase tracking-wider">Colaboradores</p>
+              <p className="text-white text-lg font-bold leading-none mt-1">
+                {colaboradores.length}
+                <span className="text-white/50 text-xs font-normal">
+                  {empresa.planMaxColaboradoresPorSupervisor != null
+                    ? `/${empresa.planMaxColaboradoresPorSupervisor} col./sup.`
+                    : '/∞'}
+                </span>
+              </p>
+            </div>
+            <div className="px-4 py-2 rounded-xl text-center"
+              style={{ backgroundColor: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)' }}>
+              <p className="text-white/60 text-[10px] uppercase tracking-wider">Plan</p>
+              <div className="flex items-center gap-1.5 mt-1">
+                <PlanIcon size={14} className="text-white" />
+                <span className="text-white text-sm font-semibold">{empresa.planNombre}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -160,17 +289,42 @@ export default function EmpresaDashboardPage() {
         </div>
       </div>
 
-      {/* Placeholder de KPIs (vendrá luego) */}
-      <div className="rounded-2xl border-2 border-dashed p-10 flex flex-col items-center justify-center gap-3 text-center"
-        style={{ borderColor: cardBorder, backgroundColor: cardBg }}>
-        <Construction size={36} style={{ color: '#f58227' }} />
-        <p className="font-semibold text-base" style={{ color: titleColor }}>
-          Indicadores de la empresa
-        </p>
-        <p className="text-sm max-w-md" style={{ color: subColor }}>
-          Aquí verás los KPIs de incidentes, EPPs y colaboradores de <strong>{empresa.nombre}</strong>.
-          Esta sección se conectará a los datos reales en la próxima entrega.
-        </p>
+      {/* Equipo: supervisores + colaboradores */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Users size={18} style={{ color: '#af2154' }} />
+          <h2 className="text-base font-bold" style={{ color: titleColor }}>
+            Equipo de la empresa
+          </h2>
+          <span className="ml-auto text-xs" style={{ color: subColor }}>
+            Clic en un supervisor para ver sus colaboradores
+          </span>
+        </div>
+
+        {supervisores.length === 0 ? (
+          <div className="rounded-2xl border-2 border-dashed p-10 flex flex-col items-center gap-3 text-center"
+            style={{ borderColor: cardBorder, backgroundColor: cardBg }}>
+            <UserCheck size={32} style={{ color: subColor }} />
+            <p className="text-sm font-medium" style={{ color: subColor }}>
+              Esta empresa aún no tiene supervisores registrados.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {supervisores.map(sup => (
+              <SupervisorRow
+                key={sup.id}
+                sup={sup}
+                colaboradores={colaboradores}
+                dark={dark}
+                cardBg={cardBg}
+                cardBorder={cardBorder}
+                titleColor={titleColor}
+                subColor={subColor}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
     </div>

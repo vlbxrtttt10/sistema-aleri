@@ -7,8 +7,10 @@ import {
 } from 'lucide-react'
 import api from '../../services/api'
 import toast from 'react-hot-toast'
+import { useTheme } from '../../context/ThemeContext.jsx'
 
 export default function ReportesPage() {
+  const { dark } = useTheme()
   const [searchParams] = useSearchParams()
   const incidenteId = searchParams.get('incidenteId')
 
@@ -23,6 +25,16 @@ export default function ReportesPage() {
   const [incidentes,    setIncidentes]    = useState([])
   const [mostrarPicker, setMostrarPicker] = useState(false)
   const [busqueda,      setBusqueda]      = useState('')
+
+  // ── colores dinámicos igual que EmpresasPage ──
+  const cardBg     = dark ? '#1e293b' : '#ffffff'
+  const cardBorder = dark ? '#334155' : '#f1f5f9'
+  const titleColor = dark ? '#f1f5f9' : '#111827'
+  const subColor   = dark ? '#64748b' : '#9ca3af'
+  const rowText    = dark ? '#cbd5e1' : '#374151'
+  const inputBg    = dark ? '#0f172a' : '#f9fafb'
+  const inputBd    = dark ? '#334155' : '#e5e7eb'
+  const inputColor = dark ? '#f1f5f9' : '#1f2937'
 
   useEffect(() => {
     cargarHistorial()
@@ -88,109 +100,121 @@ export default function ReportesPage() {
   )
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
 
-      {/* Encabezado */}
+      {/* ── Encabezado ── */}
       <div className="flex items-center justify-between flex-wrap gap-4">
-        <div className="flex items-center gap-3">
-          <FileBarChart2 size={28} className="text-primary-500" />
-          <div>
-            <h1 className="text-2xl font-bold text-white">Reportes</h1>
-            <p className="text-sm text-gray-400">Exporta datos y analiza incidentes con IA</p>
-          </div>
+        <div>
+          <h1 className="text-xl font-bold" style={{ color: titleColor }}>Reportes</h1>
+          <p className="text-sm mt-0.5" style={{ color: subColor }}>
+            Exporta datos y analiza incidentes con IA
+          </p>
         </div>
         <button
           onClick={descargarIncidentes}
           disabled={descargando}
-          className="flex items-center gap-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white text-sm font-semibold py-2.5 px-5 rounded-xl transition-colors shadow-sm"
+          className="flex items-center gap-2 text-white text-sm font-semibold py-2.5 px-5 rounded-xl transition-all hover:opacity-90 disabled:opacity-60 shadow-sm"
+          style={{ backgroundColor: '#16a34a' }}
         >
           <Download size={16} />
           {descargando ? 'Generando...' : 'Descargar Excel'}
         </button>
       </div>
 
-      {/* Tarjeta Excel */}
-      <div className="bg-gray-800 rounded-xl p-5 border border-gray-700 flex items-center gap-4">
-        <div className="bg-green-500/20 p-3 rounded-lg shrink-0">
-          <FileSpreadsheet size={24} className="text-green-400" />
+      {/* ── Tarjeta Excel ── */}
+      <div className="rounded-2xl border shadow-sm p-5 flex items-center gap-4"
+        style={{ backgroundColor: cardBg, borderColor: cardBorder }}>
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+          style={{ backgroundColor: dark ? '#14532d' : '#f0fdf4' }}>
+          <FileSpreadsheet size={22} style={{ color: '#16a34a' }} />
         </div>
         <div>
-          <p className="text-white font-semibold">Exportar Incidentes / Accidentes</p>
-          <p className="text-xs text-gray-400 mt-0.5">
+          <p className="font-semibold text-sm" style={{ color: titleColor }}>Exportar Incidentes / Accidentes</p>
+          <p className="text-xs mt-0.5" style={{ color: subColor }}>
             Genera un archivo Excel con todos los registros: código, tipo, estado, fecha, área e implicado.
           </p>
         </div>
       </div>
 
-      {/* Encabezado IA */}
+      {/* ── Encabezado IA ── */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-2">
-          <Brain size={22} className="text-purple-400" />
-          <h2 className="text-lg font-bold text-white">Análisis IA de Incidentes</h2>
-          <span className="text-xs bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full font-medium">Claude AI</span>
+          <Brain size={22} style={{ color: '#7c3aed' }} />
+          <h2 className="text-lg font-bold" style={{ color: titleColor }}>Análisis IA de Incidentes</h2>
+          <span className="text-xs font-semibold px-2.5 py-1 rounded-full"
+            style={{ backgroundColor: dark ? '#2e1065' : '#f5f3ff', color: '#7c3aed' }}>
+            Claude AI
+          </span>
         </div>
-        {/* Botón grande solo cuando no hay análisis activo */}
         {!analisis && !analizando && (
           <button
             onClick={() => { setMostrarPicker(v => !v); setBusqueda('') }}
-            className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold py-2 px-4 rounded-xl transition-colors"
+            className="flex items-center gap-2 text-white text-sm font-semibold py-2 px-4 rounded-xl transition-all hover:opacity-90"
+            style={{ backgroundColor: '#7c3aed' }}
           >
-            <Zap size={15} />
-            Analizar incidente
+            <Zap size={15} /> Analizar incidente
           </button>
         )}
       </div>
 
-      {/* Picker de incidente */}
+      {/* ── Picker de incidente ── */}
       {mostrarPicker && (
-        <div className="bg-gray-800 border border-purple-500/30 rounded-xl overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-700 flex items-center gap-2">
-            <Search size={15} className="text-gray-400" />
+        <div className="rounded-2xl border shadow-sm overflow-hidden"
+          style={{ backgroundColor: cardBg, borderColor: '#7c3aed40' }}>
+          <div className="px-4 py-3 border-b flex items-center gap-2"
+            style={{ borderColor: cardBorder }}>
+            <Search size={15} style={{ color: subColor }} />
             <input
-              autoFocus
-              type="text"
+              autoFocus type="text"
               placeholder="Buscar por código, tipo o área..."
               value={busqueda}
               onChange={e => setBusqueda(e.target.value)}
-              className="flex-1 bg-transparent text-sm text-white placeholder-gray-500 outline-none"
+              className="flex-1 bg-transparent text-sm outline-none"
+              style={{ color: titleColor }}
             />
           </div>
           <div className="max-h-60 overflow-y-auto">
             {incidentesFiltrados.length === 0 ? (
-              <p className="text-center py-6 text-sm text-gray-500">Sin resultados</p>
-            ) : (
-              incidentesFiltrados.map(inc => (
-                <button
-                  key={inc.id}
-                  onClick={() => analizarIncidente(inc.id)}
-                  className="w-full text-left px-4 py-3 hover:bg-gray-700/60 transition-colors border-b border-gray-700/40 flex items-center justify-between"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs font-bold text-purple-300">{inc.codigo}</span>
-                    <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${
-                      inc.tipo === 'ACCIDENTE' ? 'bg-red-500/20 text-red-300' : 'bg-yellow-500/20 text-yellow-300'
-                    }`}>{inc.tipo}</span>
-                    {inc.area && <span className="text-xs text-gray-400">{inc.area}</span>}
-                  </div>
-                  <span className="text-xs text-gray-500">{inc.fechaOcurrencia}</span>
-                </button>
-              ))
-            )}
+              <p className="text-center py-6 text-sm" style={{ color: subColor }}>Sin resultados</p>
+            ) : incidentesFiltrados.map(inc => (
+              <button key={inc.id} onClick={() => analizarIncidente(inc.id)}
+                className="w-full text-left px-4 py-3 border-b flex items-center justify-between transition-colors"
+                style={{ borderColor: cardBorder }}
+                onMouseEnter={e => e.currentTarget.style.backgroundColor = dark ? '#334155' : '#f8fafc'}
+                onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-bold" style={{ color: '#7c3aed' }}>{inc.codigo}</span>
+                  <span className="text-xs px-1.5 py-0.5 rounded-full font-medium"
+                    style={{
+                      backgroundColor: inc.tipo === 'ACCIDENTE' ? (dark ? '#450a0a' : '#fff5f5') : (dark ? '#451a03' : '#fffbeb'),
+                      color: inc.tipo === 'ACCIDENTE' ? '#ef4444' : '#f59e0b',
+                    }}>{inc.tipo}</span>
+                  {inc.area && <span className="text-xs" style={{ color: subColor }}>{inc.area}</span>}
+                </div>
+                <span className="text-xs" style={{ color: subColor }}>{inc.fechaOcurrencia}</span>
+              </button>
+            ))}
           </div>
         </div>
       )}
 
-      {/* Layout: historial + análisis */}
+      {/* ── Layout: historial + análisis ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
         {/* Panel historial */}
-        <div className="bg-gray-800 border border-gray-700 rounded-xl overflow-hidden flex flex-col">
-          <div className="px-4 py-3 border-b border-gray-700 flex items-center justify-between">
+        <div className="rounded-2xl border shadow-sm overflow-hidden flex flex-col"
+          style={{ backgroundColor: cardBg, borderColor: cardBorder }}>
+          <div className="px-4 py-3 border-b flex items-center justify-between"
+            style={{ borderColor: cardBorder }}>
             <div className="flex items-center gap-2">
-              <Clock size={15} className="text-gray-400" />
-              <span className="text-sm font-semibold text-white">Historial de análisis</span>
+              <Clock size={15} style={{ color: subColor }} />
+              <span className="text-sm font-semibold" style={{ color: titleColor }}>Historial de análisis</span>
             </div>
-            <button onClick={cargarHistorial} className="text-gray-400 hover:text-white transition-colors">
+            <button onClick={cargarHistorial}
+              className="transition-colors"
+              style={{ color: subColor }}
+              onMouseEnter={e => e.currentTarget.style.color = titleColor}
+              onMouseLeave={e => e.currentTarget.style.color = subColor}>
               <RefreshCw size={14} />
             </button>
           </div>
@@ -198,83 +222,95 @@ export default function ReportesPage() {
           <div className="flex-1 overflow-y-auto max-h-[480px]">
             {loadingHist ? (
               <div className="flex items-center justify-center py-8">
-                <Loader2 size={20} className="text-purple-400 animate-spin" />
+                <Loader2 size={20} style={{ color: '#7c3aed' }} className="animate-spin" />
               </div>
             ) : historial.length === 0 ? (
               <div className="py-10 text-center px-4">
-                <Brain size={28} className="text-gray-600 mx-auto mb-2" />
-                <p className="text-gray-500 text-sm">Sin análisis anteriores</p>
-                <p className="text-gray-600 text-xs mt-1">Usa "Analizar incidente" para empezar</p>
+                <Brain size={28} className="mx-auto mb-2" style={{ color: dark ? '#334155' : '#d1d5db' }} />
+                <p className="text-sm" style={{ color: subColor }}>Sin análisis anteriores</p>
+                <p className="text-xs mt-1" style={{ color: dark ? '#475569' : '#9ca3af' }}>
+                  Usa "Analizar incidente" para empezar
+                </p>
               </div>
-            ) : (
-              historial.map(item => (
-                <button
-                  key={item.id}
-                  onClick={() => analizarIncidente(item.incidenteId)}
-                  className={`w-full text-left px-4 py-3 border-b border-gray-700/50 hover:bg-gray-700/50 transition-colors flex items-start gap-3 ${
-                    seleccionado === item.incidenteId ? 'bg-purple-500/10 border-l-2 border-l-purple-500' : ''
-                  }`}
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <span className="text-xs font-bold text-purple-300">{item.codigo}</span>
-                      <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${
-                        item.tipo === 'ACCIDENTE' ? 'bg-red-500/20 text-red-300' : 'bg-yellow-500/20 text-yellow-300'
-                      }`}>{item.tipo}</span>
-                    </div>
-                    {item.area && <p className="text-xs text-gray-400 mb-1">{item.area}</p>}
-                    <p className="text-xs text-gray-500 leading-relaxed line-clamp-2">{item.preview}</p>
-                    <p className="text-xs text-gray-600 mt-1">{item.fecha}</p>
+            ) : historial.map(item => (
+              <button key={item.id} onClick={() => analizarIncidente(item.incidenteId)}
+                className="w-full text-left px-4 py-3 border-b flex items-start gap-3 transition-colors"
+                style={{
+                  borderColor: cardBorder,
+                  backgroundColor: seleccionado === item.incidenteId
+                    ? (dark ? '#2e1065' : '#f5f3ff')
+                    : 'transparent',
+                  borderLeft: seleccionado === item.incidenteId ? '2px solid #7c3aed' : '2px solid transparent',
+                }}
+                onMouseEnter={e => { if (seleccionado !== item.incidenteId) e.currentTarget.style.backgroundColor = dark ? '#334155' : '#f8fafc' }}
+                onMouseLeave={e => { e.currentTarget.style.backgroundColor = seleccionado === item.incidenteId ? (dark ? '#2e1065' : '#f5f3ff') : 'transparent' }}>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className="text-xs font-bold" style={{ color: '#7c3aed' }}>{item.codigo}</span>
+                    <span className="text-xs px-1.5 py-0.5 rounded-full font-medium"
+                      style={{
+                        backgroundColor: item.tipo === 'ACCIDENTE' ? (dark ? '#450a0a' : '#fff5f5') : (dark ? '#451a03' : '#fffbeb'),
+                        color: item.tipo === 'ACCIDENTE' ? '#ef4444' : '#f59e0b',
+                      }}>{item.tipo}</span>
                   </div>
-                  <ChevronRight size={14} className="text-gray-500 mt-1 shrink-0" />
-                </button>
-              ))
-            )}
+                  {item.area && <p className="text-xs mb-1" style={{ color: subColor }}>{item.area}</p>}
+                  <p className="text-xs leading-relaxed line-clamp-2" style={{ color: subColor }}>{item.preview}</p>
+                  <p className="text-xs mt-1" style={{ color: dark ? '#475569' : '#9ca3af' }}>{item.fecha}</p>
+                </div>
+                <ChevronRight size={14} style={{ color: subColor }} className="mt-1 shrink-0" />
+              </button>
+            ))}
           </div>
         </div>
 
         {/* Panel resultado */}
         <div className="lg:col-span-2">
           {analizando && (
-            <div className="bg-gray-800 border border-gray-700 rounded-xl p-10 flex flex-col items-center gap-3 min-h-[200px] justify-center">
-              <Loader2 size={32} className="text-purple-400 animate-spin" />
-              <p className="text-gray-300 font-medium">Analizando el incidente con IA...</p>
-              <p className="text-gray-500 text-sm">Claude está revisando los datos y las imágenes del evento</p>
+            <div className="rounded-2xl border shadow-sm p-10 flex flex-col items-center gap-3 min-h-[200px] justify-center"
+              style={{ backgroundColor: cardBg, borderColor: cardBorder }}>
+              <Loader2 size={32} style={{ color: '#7c3aed' }} className="animate-spin" />
+              <p className="font-medium" style={{ color: titleColor }}>Analizando el incidente con IA...</p>
+              <p className="text-sm" style={{ color: subColor }}>Claude está revisando los datos del evento</p>
             </div>
           )}
 
           {analisis && !analizando && (
-            <div className="bg-gray-800 border border-purple-500/30 rounded-xl overflow-hidden">
-              <div className="bg-purple-500/10 px-5 py-3 border-b border-purple-500/20 flex items-center justify-between">
+            <div className="rounded-2xl border shadow-sm overflow-hidden"
+              style={{ backgroundColor: cardBg, borderColor: dark ? '#4c1d95' : '#ddd6fe' }}>
+              <div className="px-5 py-3 border-b flex items-center justify-between"
+                style={{ backgroundColor: dark ? '#2e1065' : '#f5f3ff', borderColor: dark ? '#4c1d95' : '#ddd6fe' }}>
                 <div className="flex items-center gap-2">
-                  <Brain size={16} className="text-purple-400" />
-                  <span className="text-purple-300 text-sm font-semibold">Análisis generado por Claude AI</span>
+                  <Brain size={16} style={{ color: '#7c3aed' }} />
+                  <span className="text-sm font-semibold" style={{ color: dark ? '#c4b5fd' : '#5b21b6' }}>
+                    Análisis generado por Claude AI
+                  </span>
                   {cacheado && (
-                    <span className="text-xs text-gray-500 flex items-center gap-1">
-                      <Clock size={11} />
-                      {fechaCache}
+                    <span className="text-xs flex items-center gap-1" style={{ color: subColor }}>
+                      <Clock size={11} /> {fechaCache}
                     </span>
                   )}
                 </div>
                 <button
                   onClick={() => { setMostrarPicker(v => !v); setBusqueda('') }}
-                  className="flex items-center gap-1.5 text-xs text-purple-300 hover:text-purple-100 transition-colors border border-purple-500/30 hover:border-purple-400/50 px-3 py-1.5 rounded-lg"
-                >
-                  <Zap size={12} />
-                  Cambiar incidente
+                  className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition-all"
+                  style={{ color: '#7c3aed', borderColor: dark ? '#4c1d95' : '#c4b5fd' }}
+                  onMouseEnter={e => e.currentTarget.style.backgroundColor = dark ? '#4c1d95' : '#ede9fe'}
+                  onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}>
+                  <Zap size={12} /> Cambiar incidente
                 </button>
               </div>
               <div className="p-5 overflow-y-auto max-h-[480px]">
-                <AnalisisRender texto={analisis} />
+                <AnalisisRender texto={analisis} dark={dark} />
               </div>
             </div>
           )}
 
           {!analizando && !analisis && (
-            <div className="bg-gray-800 border border-dashed border-gray-600 rounded-xl p-10 flex flex-col items-center gap-3 text-center min-h-[200px] justify-center">
-              <Brain size={36} className="text-gray-600" />
-              <p className="text-gray-400 font-medium">Selecciona un incidente para analizar</p>
-              <p className="text-gray-500 text-sm max-w-sm">
+            <div className="rounded-2xl border border-dashed shadow-sm p-10 flex flex-col items-center gap-3 text-center min-h-[200px] justify-center"
+              style={{ backgroundColor: cardBg, borderColor: dark ? '#334155' : '#e5e7eb' }}>
+              <Brain size={36} style={{ color: dark ? '#334155' : '#d1d5db' }} />
+              <p className="font-medium" style={{ color: rowText }}>Selecciona un incidente para analizar</p>
+              <p className="text-sm max-w-sm" style={{ color: subColor }}>
                 Usa el botón "Analizar incidente" o selecciona uno del historial.
               </p>
             </div>
@@ -285,26 +321,28 @@ export default function ReportesPage() {
   )
 }
 
-function AnalisisRender({ texto }) {
+function AnalisisRender({ texto, dark }) {
   const secciones = texto.split(/\n(?=##\s)/).filter(Boolean)
 
   const iconMap = {
-    'Análisis':    { icon: <FileBarChart2 size={15} />, color: 'text-blue-400',   bg: 'bg-blue-500/10',    border: 'border-blue-500/20'  },
-    'Causas':      { icon: <AlertTriangle size={15} />, color: 'text-red-400',    bg: 'bg-red-500/10',     border: 'border-red-500/20'   },
-    'Correctivas': { icon: <CheckCircle2  size={15} />, color: 'text-green-400',  bg: 'bg-green-500/10',   border: 'border-green-500/20' },
-    'Preventivas': { icon: <ShieldCheck   size={15} />, color: 'text-yellow-400', bg: 'bg-yellow-500/10',  border: 'border-yellow-500/20'},
-    'Lecciones':   { icon: <BookOpen      size={15} />, color: 'text-purple-400', bg: 'bg-purple-500/10',  border: 'border-purple-500/20'},
+    'Análisis':    { icon: <FileBarChart2 size={15} />, color: '#3b82f6', bg: dark ? '#1e3a5f' : '#eff6ff', border: dark ? '#1e40af' : '#bfdbfe' },
+    'Causas':      { icon: <AlertTriangle size={15} />, color: '#ef4444', bg: dark ? '#450a0a' : '#fff5f5', border: dark ? '#7f1d1d' : '#fecaca' },
+    'Correctivas': { icon: <CheckCircle2  size={15} />, color: '#16a34a', bg: dark ? '#14532d' : '#f0fdf4', border: dark ? '#15803d' : '#bbf7d0' },
+    'Preventivas': { icon: <ShieldCheck   size={15} />, color: '#f59e0b', bg: dark ? '#451a03' : '#fffbeb', border: dark ? '#92400e' : '#fde68a' },
+    'Lecciones':   { icon: <BookOpen      size={15} />, color: '#7c3aed', bg: dark ? '#2e1065' : '#f5f3ff', border: dark ? '#4c1d95' : '#ddd6fe' },
   }
+
+  const defaultStyle = { icon: null, color: dark ? '#94a3b8' : '#374151', bg: dark ? '#334155' : '#f8fafc', border: dark ? '#475569' : '#e5e7eb' }
 
   function getStyle(titulo) {
     for (const [key, val] of Object.entries(iconMap)) {
       if (titulo.includes(key)) return val
     }
-    return { icon: null, color: 'text-gray-300', bg: 'bg-gray-700/40', border: 'border-gray-600/30' }
+    return defaultStyle
   }
 
   if (secciones.length <= 1) {
-    return <p className="text-gray-300 text-sm leading-relaxed whitespace-pre-wrap">{limpiarTexto(texto)}</p>
+    return <p className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: dark ? '#cbd5e1' : '#374151' }}>{limpiarTexto(texto)}</p>
   }
 
   return (
@@ -314,14 +352,13 @@ function AnalisisRender({ texto }) {
         const titulo = lines[0].replace(/^##\s*/, '').trim()
         const cuerpo = lines.slice(1).join('\n').trim()
         const style  = getStyle(titulo)
-
         return (
-          <div key={i} className={`rounded-lg p-4 border ${style.bg} ${style.border}`}>
-            <div className={`flex items-center gap-2 font-semibold text-sm mb-2 ${style.color}`}>
+          <div key={i} className="rounded-xl p-4 border" style={{ backgroundColor: style.bg, borderColor: style.border }}>
+            <div className="flex items-center gap-2 font-semibold text-sm mb-2" style={{ color: style.color }}>
               {style.icon}
               <span>{titulo}</span>
             </div>
-            <CuerpoRender texto={cuerpo} />
+            <CuerpoRender texto={cuerpo} dark={dark} />
           </div>
         )
       })}
@@ -330,44 +367,33 @@ function AnalisisRender({ texto }) {
 }
 
 function limpiarTexto(t) {
-  return t
-    .replace(/\*\*(.*?)\*\*/g, '$1')
-    .replace(/\*(.*?)\*/g, '$1')
-    .replace(/^---+$/gm, '')
-    .trim()
+  return t.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1').replace(/^---+$/gm, '').trim()
 }
 
-function CuerpoRender({ texto }) {
-  const lineas = texto.split('\n')
-
+function CuerpoRender({ texto, dark }) {
+  const textColor = dark ? '#94a3b8' : '#4b5563'
   return (
-    <div className="space-y-1 text-gray-300 text-sm leading-relaxed">
-      {lineas.map((linea, i) => {
+    <div className="space-y-1 text-sm leading-relaxed" style={{ color: textColor }}>
+      {texto.split('\n').map((linea, i) => {
         const limpia = limpiarTexto(linea)
         if (!limpia) return null
-
         if (/^\s*[-•]\s+/.test(limpia)) {
-          const contenido = limpia.replace(/^\s*[-•]\s+/, '')
           return (
             <div key={i} className="flex items-start gap-2">
               <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-current opacity-50 shrink-0" />
-              <span>{contenido}</span>
+              <span>{limpia.replace(/^\s*[-•]\s+/, '')}</span>
             </div>
           )
         }
-
         if (/^\s*\d+\.\s+/.test(limpia)) {
-          const match     = limpia.match(/^\s*(\d+)\.\s+(.*)/)
-          const num       = match ? match[1] : ''
-          const contenido = match ? match[2] : limpia
+          const match = limpia.match(/^\s*(\d+)\.\s+(.*)/)
           return (
             <div key={i} className="flex items-start gap-2">
-              <span className="shrink-0 text-xs font-bold opacity-60 mt-0.5">{num}.</span>
-              <span>{contenido}</span>
+              <span className="shrink-0 text-xs font-bold opacity-60 mt-0.5">{match?.[1]}.</span>
+              <span>{match?.[2] ?? limpia}</span>
             </div>
           )
         }
-
         return <p key={i}>{limpia}</p>
       })}
     </div>

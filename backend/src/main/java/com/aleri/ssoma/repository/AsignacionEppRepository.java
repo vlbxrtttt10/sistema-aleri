@@ -14,6 +14,7 @@ public interface AsignacionEppRepository extends JpaRepository<AsignacionEpp, Lo
     List<AsignacionEpp> findByColaboradorAndActivoTrue(Colaborador colaborador);
     List<AsignacionEpp> findByEmpresaAndActivoTrue(Empresa empresa);
     long countByEmpresaAndActivoTrue(Empresa empresa);
+    long countByActivoTrue();
     long countByEmpresaId(Long empresaId);
     void deleteByEmpresaId(Long empresaId);
 

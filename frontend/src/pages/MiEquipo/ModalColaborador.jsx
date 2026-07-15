@@ -5,7 +5,8 @@ import toast from 'react-hot-toast'
 
 const VACIO = { nombre: '', dni: '', cargo: '', area: '', fechaIngreso: '', supervisorId: '' }
 
-export default function ModalColaborador({ dark, onClose, onGuardado }) {
+export default function ModalColaborador({ dark, onClose, onGuardado, colaborador }) {
+  const editando = !!colaborador
   const [form,        setForm]        = useState(VACIO)
   const [supervisores, setSupervisores] = useState([])
   const [guardando,   setGuardando]   = useState(false)
@@ -19,7 +20,19 @@ export default function ModalColaborador({ dark, onClose, onGuardado }) {
 
   useEffect(() => {
     api.get('/colaboradores/supervisores')
-      .then(res => setSupervisores(res.data))
+      .then(res => {
+        setSupervisores(res.data)
+        if (colaborador) {
+          setForm({
+            nombre:       colaborador.nombre       || '',
+            dni:          colaborador.dni           || '',
+            cargo:        colaborador.cargo         || '',
+            area:         colaborador.area          || '',
+            fechaIngreso: colaborador.fechaIngreso  || '',
+            supervisorId: colaborador.supervisor?.id?.toString() || '',
+          })
+        }
+      })
       .catch(() => toast.error('No se pudieron cargar los supervisores'))
   }, [])
 
@@ -32,16 +45,21 @@ export default function ModalColaborador({ dark, onClose, onGuardado }) {
       return
     }
     setGuardando(true)
-    api.post('/colaboradores', {
+    const payload = {
       nombre:       form.nombre,
       dni:          form.dni,
       cargo:        form.cargo || null,
       area:         form.area  || null,
       fechaIngreso: form.fechaIngreso || null,
       supervisorId: Number(form.supervisorId),
-    })
+    }
+    const req = editando
+      ? api.put(`/colaboradores/${colaborador.id}`, payload)
+      : api.post('/colaboradores', payload)
+
+    req
       .then(res => {
-        toast.success('Colaborador creado correctamente')
+        toast.success(editando ? 'Colaborador actualizado' : 'Colaborador creado correctamente')
         onGuardado(res.data)
         onClose()
       })
@@ -56,7 +74,9 @@ export default function ModalColaborador({ dark, onClose, onGuardado }) {
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: border }}>
           <div>
-            <p className="font-bold text-base" style={{ color: title }}>Nuevo colaborador</p>
+            <p className="font-bold text-base" style={{ color: title }}>
+              {editando ? 'Editar colaborador' : 'Nuevo colaborador'}
+            </p>
             <p className="text-xs mt-0.5" style={{ color: sub }}>Datos del colaborador</p>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:opacity-70 transition-opacity" style={{ color: sub }}>
@@ -66,14 +86,14 @@ export default function ModalColaborador({ dark, onClose, onGuardado }) {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
-          <Campo label="Nombre completo *" icon={<User size={14} />} dark={dark}>
+          <Campo label="Nombre completo *" icon={<User size={14} />}>
             <input name="nombre" value={form.nombre} onChange={handleChange}
               placeholder="Ej: Juan Mamani"
               style={{ backgroundColor: inputBg, color: inputTx, borderColor: border }}
               className="w-full pl-9 pr-3 py-2 text-sm rounded-xl border focus:outline-none focus:border-pink-500" />
           </Campo>
 
-          <Campo label="DNI *" icon={<Hash size={14} />} dark={dark}>
+          <Campo label="DNI *" icon={<Hash size={14} />}>
             <input name="dni" value={form.dni} onChange={handleChange}
               placeholder="12345678" maxLength={20}
               style={{ backgroundColor: inputBg, color: inputTx, borderColor: border }}
@@ -81,13 +101,13 @@ export default function ModalColaborador({ dark, onClose, onGuardado }) {
           </Campo>
 
           <div className="grid grid-cols-2 gap-3">
-            <Campo label="Cargo" icon={<Briefcase size={14} />} dark={dark}>
+            <Campo label="Cargo" icon={<Briefcase size={14} />}>
               <input name="cargo" value={form.cargo} onChange={handleChange}
                 placeholder="Ej: Operario"
                 style={{ backgroundColor: inputBg, color: inputTx, borderColor: border }}
                 className="w-full pl-9 pr-3 py-2 text-sm rounded-xl border focus:outline-none focus:border-pink-500" />
             </Campo>
-            <Campo label="Área" icon={<Building size={14} />} dark={dark}>
+            <Campo label="Área" icon={<Building size={14} />}>
               <input name="area" value={form.area} onChange={handleChange}
                 placeholder="Ej: Producción"
                 style={{ backgroundColor: inputBg, color: inputTx, borderColor: border }}
@@ -95,7 +115,7 @@ export default function ModalColaborador({ dark, onClose, onGuardado }) {
             </Campo>
           </div>
 
-          <Campo label="Fecha de ingreso" icon={<Calendar size={14} />} dark={dark}>
+          <Campo label="Fecha de ingreso" icon={<Calendar size={14} />}>
             <input type="date" name="fechaIngreso" value={form.fechaIngreso} onChange={handleChange}
               style={{ backgroundColor: inputBg, color: inputTx, borderColor: border }}
               className="w-full pl-9 pr-3 py-2 text-sm rounded-xl border focus:outline-none focus:border-pink-500" />
@@ -124,7 +144,7 @@ export default function ModalColaborador({ dark, onClose, onGuardado }) {
             <button type="submit" disabled={guardando}
               className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-50"
               style={{ backgroundColor: '#af2154' }}>
-              {guardando ? 'Guardando...' : 'Crear colaborador'}
+              {guardando ? 'Guardando...' : editando ? 'Guardar cambios' : 'Crear colaborador'}
             </button>
           </div>
         </form>

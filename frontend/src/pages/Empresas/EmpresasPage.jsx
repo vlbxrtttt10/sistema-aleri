@@ -16,8 +16,8 @@ import ModalPortal from '../../components/ModalPortal.jsx'
 
 /* Config visual de cada plan */
 const PLAN_CFG = {
-  BASICO: { label: 'Básico',  color: '#6b7280', bg: '#f1f5f9', bgDark: '#1e293b', icon: Shield, desc: '4 supervisores · 4 col./sup.' },
-  VIP:    { label: 'VIP',     color: '#af2154', bg: '#fceef4', bgDark: '#2f0614', icon: Crown,  desc: '20 supervisores · 20 col./sup.' },
+  BASICO: { label: 'Básico',  color: '#6b7280', bg: '#f1f5f9', bgDark: '#1e293b', icon: Shield, desc: '3 supervisores · 3 col./sup.' },
+  VIP:    { label: 'VIP',     color: '#af2154', bg: '#fceef4', bgDark: '#2f0614', icon: Crown,  desc: '5 supervisores · 5 col./sup.' },
   ALERI:  { label: 'ALERI',   color: '#83266d', bg: '#f7edf4', bgDark: '#23061d', icon: Star,   desc: 'Supervisores y colaboradores ilimitados' },
 }
 

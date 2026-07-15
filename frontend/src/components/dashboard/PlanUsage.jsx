@@ -96,14 +96,19 @@ export default function PlanUsage({ dark, resumen, empresaSeleccionada, esAdmin,
   const incMes      = resumen?.totalIncidentesMes   ?? 0
 
   let supMax
+  let colabMax
   if (esGlobal || planNombre === 'ALERI') {
-    supMax = null
+    supMax   = null
+    colabMax = null
   } else if (planNombre === 'BASICO') {
-    supMax = resumen?.supervisoresMaximo ?? 3
+    supMax   = resumen?.supervisoresMaximo ?? 3
+    colabMax = resumen?.colaboradoresMaximo ?? 3
   } else if (planNombre === 'VIP') {
-    supMax = resumen?.supervisoresMaximo ?? 5
+    supMax   = resumen?.supervisoresMaximo ?? 5
+    colabMax = resumen?.colaboradoresMaximo ?? 5
   } else {
-    supMax = resumen?.supervisoresMaximo ?? null
+    supMax   = resumen?.supervisoresMaximo ?? null
+    colabMax = resumen?.colaboradoresMaximo ?? null
   }
 
   return (
@@ -142,9 +147,9 @@ export default function PlanUsage({ dark, resumen, empresaSeleccionada, esAdmin,
           <p className="text-xs text-center py-2" style={{ color: subColor }}>Cargando...</p>
         ) : (
           <>
-            <Bar label="Supervisores"   used={supUsados}   total={supMax}        color={meta.color} dark={dark} />
-            <Bar label="Colaboradores"  used={colabUsados} total={null}          color="#83266d"    dark={dark} />
-            <Bar label="Incidentes mes" used={incMes}      total={null}          color="#f59e0b"    dark={dark} />
+            <Bar label="Supervisores"   used={supUsados}   total={supMax}   color={meta.color} dark={dark} />
+            <Bar label="Colaboradores"  used={colabUsados} total={colabMax} color="#83266d"    dark={dark} />
+            <Bar label="Incidentes mes" used={incMes}      total={null}     color="#f59e0b"    dark={dark} />
           </>
         )}
       </div>

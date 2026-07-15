@@ -2,6 +2,7 @@ package com.aleri.ssoma.controller;
 
 import com.aleri.ssoma.dto.CrearEmpresaRequest;
 import com.aleri.ssoma.dto.CrearUsuarioEmpresaRequest;
+import com.aleri.ssoma.dto.EmpresaEquipoDto;
 import com.aleri.ssoma.dto.EmpresaResumenDto;
 import com.aleri.ssoma.dto.PlanDto;
 import com.aleri.ssoma.dto.UsuarioResumenDto;
@@ -63,6 +64,16 @@ public class EmpresaController {
             @Valid @RequestBody CrearEmpresaRequest req) {
         try {
             return ResponseEntity.ok(service.actualizar(id, req));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("mensaje", e.getMessage()));
+        }
+    }
+
+    /* GET /api/empresas/{id}/equipo — supervisores y colaboradores de la empresa */
+    @GetMapping("/{id}/equipo")
+    public ResponseEntity<?> equipo(@PathVariable Long id) {
+        try {
+            return ResponseEntity.ok(service.equipo(id));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("mensaje", e.getMessage()));
         }

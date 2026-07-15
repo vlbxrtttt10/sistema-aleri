@@ -53,6 +53,16 @@ public class ColaboradorController {
             return ResponseEntity.badRequest().body(Map.of("mensaje", "Supervisor no válido"));
         }
 
+        // Validar límite total de colaboradores del plan
+        Integer maxCol = usuario.getEmpresa().getPlan().getMaxColaboradoresPorSupervisor();
+        if (maxCol != null) {
+            long totalActual = colaboradorRepo.countByEmpresaAndActivoTrue(usuario.getEmpresa());
+            if (totalActual >= maxCol) {
+                return ResponseEntity.badRequest().body(Map.of("mensaje",
+                    "Has alcanzado el límite de colaboradores de tu plan (" + maxCol + ")"));
+            }
+        }
+
         Colaborador c = new Colaborador();
         c.setNombre(req.nombre);
         c.setDni(req.dni);
@@ -64,6 +74,46 @@ public class ColaboradorController {
         c.setActivo(true);
 
         return ResponseEntity.ok(colaboradorRepo.save(c));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<?> actualizar(@AuthenticationPrincipal Usuario usuario,
+                                        @PathVariable Long id,
+                                        @Valid @RequestBody ColaboradorRequest req) {
+        Colaborador c = colaboradorRepo.findById(id).orElse(null);
+        if (c == null || !c.getEmpresa().getId().equals(usuario.getEmpresa().getId())) {
+            return ResponseEntity.badRequest().body(Map.of("mensaje", "Colaborador no encontrado"));
+        }
+
+        // Si cambió el DNI, verificar que no exista en otro colaborador
+        if (!c.getDni().equals(req.dni) && colaboradorRepo.existsByDni(req.dni)) {
+            return ResponseEntity.badRequest().body(Map.of("mensaje", "Ya existe un colaborador con ese DNI"));
+        }
+
+        Supervisor supervisor = supervisorRepo.findById(req.supervisorId).orElse(null);
+        if (supervisor == null || !supervisor.getEmpresa().getId().equals(usuario.getEmpresa().getId())) {
+            return ResponseEntity.badRequest().body(Map.of("mensaje", "Supervisor no válido"));
+        }
+
+        c.setNombre(req.nombre);
+        c.setDni(req.dni);
+        c.setCargo(req.cargo);
+        c.setArea(req.area);
+        c.setFechaIngreso(req.fechaIngreso != null ? LocalDate.parse(req.fechaIngreso) : c.getFechaIngreso());
+        c.setSupervisor(supervisor);
+
+        return ResponseEntity.ok(colaboradorRepo.save(c));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> eliminar(@AuthenticationPrincipal Usuario usuario,
+                                      @PathVariable Long id) {
+        Colaborador c = colaboradorRepo.findById(id).orElse(null);
+        if (c == null || !c.getEmpresa().getId().equals(usuario.getEmpresa().getId())) {
+            return ResponseEntity.badRequest().body(Map.of("mensaje", "Colaborador no encontrado"));
+        }
+        colaboradorRepo.delete(c);
+        return ResponseEntity.ok(Map.of("mensaje", "Colaborador eliminado"));
     }
 
     record ColaboradorRequest(

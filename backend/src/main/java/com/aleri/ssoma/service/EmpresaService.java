@@ -1,14 +1,19 @@
 package com.aleri.ssoma.service;
 
+import com.aleri.ssoma.dto.ColaboradorResumenDto;
 import com.aleri.ssoma.dto.CrearEmpresaRequest;
 import com.aleri.ssoma.dto.CrearUsuarioEmpresaRequest;
 import com.aleri.ssoma.dto.EmpresaContadoresDto;
+import com.aleri.ssoma.dto.EmpresaEquipoDto;
 import com.aleri.ssoma.dto.EmpresaResumenDto;
 import com.aleri.ssoma.dto.PlanDto;
+import com.aleri.ssoma.dto.SupervisorDto;
 import com.aleri.ssoma.dto.UsuarioResumenDto;
+import com.aleri.ssoma.entity.Colaborador;
 import com.aleri.ssoma.entity.Empresa;
 import com.aleri.ssoma.entity.Plan;
 import com.aleri.ssoma.entity.Rol;
+import com.aleri.ssoma.entity.Supervisor;
 import com.aleri.ssoma.entity.Usuario;
 import com.aleri.ssoma.repository.AsignacionEppRepository;
 import com.aleri.ssoma.repository.ColaboradorRepository;
@@ -244,6 +249,58 @@ public class EmpresaService {
         return toUsuarioDto(u);
     }
 
+    /* Supervisores + colaboradores activos de una empresa (para el admin) */
+    public EmpresaEquipoDto equipo(Long empresaId) {
+        Empresa empresa = empresaRepo.findById(empresaId)
+                .orElseThrow(() -> new IllegalArgumentException("Empresa no encontrada"));
+
+        List<SupervisorDto> supervisores = supervisorRepo
+                .findByEmpresaIdOrderByCreatedAtDesc(empresaId)
+                .stream()
+                .map(this::toSupervisorDto)
+                .collect(Collectors.toList());
+
+        List<ColaboradorResumenDto> colaboradores = colaboradorRepo
+                .findByEmpresaAndActivoTrue(empresa)
+                .stream()
+                .map(this::toColaboradorDto)
+                .collect(Collectors.toList());
+
+        return new EmpresaEquipoDto(supervisores, colaboradores);
+    }
+
+    private SupervisorDto toSupervisorDto(Supervisor s) {
+        Usuario u = s.getUsuario();
+        return new SupervisorDto(
+                s.getId(),
+                u != null ? u.getId() : null,
+                u != null ? u.getNombre() : "—",
+                u != null ? u.getEmail()  : "—",
+                s.getDni(),
+                s.getTelefono(),
+                s.getCargo(),
+                s.getArea(),
+                s.getActivo(),
+                s.getCreatedAt()
+        );
+    }
+
+    private ColaboradorResumenDto toColaboradorDto(Colaborador c) {
+        Supervisor s = c.getSupervisor();
+        return new ColaboradorResumenDto(
+                c.getId(),
+                c.getNombre(),
+                c.getDni(),
+                c.getCargo(),
+                c.getArea(),
+                c.getFechaIngreso(),
+                c.getActivo(),
+                c.getCreatedAt(),
+                s != null ? s.getId() : null,
+                s != null && s.getUsuario() != null ? s.getUsuario().getNombre() : "—"
+        );
+    }
+
     private UsuarioResumenDto toUsuarioDto(Usuario u) {
         return new UsuarioResumenDto(
                 u.getId(),
@@ -256,6 +313,7 @@ public class EmpresaService {
     }
 
     private EmpresaResumenDto toDto(Empresa e) {
+        Plan plan = e.getPlan();
         return new EmpresaResumenDto(
                 e.getId(),
                 e.getNombre(),
@@ -263,8 +321,10 @@ public class EmpresaService {
                 e.getDireccion(),
                 e.getContactoEmail(),
                 e.getContactoTelefono(),
-                e.getPlan().getId(),
-                e.getPlan().getNombre(),
+                plan.getId(),
+                plan.getNombre(),
+                plan.getMaxSupervisores(),
+                plan.getMaxColaboradoresPorSupervisor(),
                 e.getActivo(),
                 e.getCreatedAt()
         );

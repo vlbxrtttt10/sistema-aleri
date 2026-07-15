@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import {
   UserPlus, Users, Search, Pencil, Trash2,
-  ShieldCheck, Crown, Star, Hash, Phone, Briefcase, Building, HardHat
+  ShieldCheck, Crown, Star, Hash, Phone, Briefcase, Building, HardHat, AlertTriangle
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useTheme } from '../../context/ThemeContext.jsx'
@@ -9,6 +9,7 @@ import api from '../../services/api.js'
 import ModalSupervisor from './ModalSupervisor.jsx'
 import ModalEliminarSupervisor from './ModalEliminarSupervisor.jsx'
 import ModalColaborador from './ModalColaborador.jsx'
+import ModalEliminarColaborador from './ModalEliminarColaborador.jsx'
 
 const PLAN_META = {
   BASICO: { label: 'Plan Básico', icon: ShieldCheck, color: '#6b7280', max: 3 },
@@ -26,7 +27,9 @@ export default function MiEquipoPage() {
   const [showModal, setShowModal] = useState(false)
   const [editando, setEditando] = useState(null)
   const [eliminando, setEliminando] = useState(null)
-  const [showModalColab, setShowModalColab] = useState(false)
+  const [showModalColab,   setShowModalColab]   = useState(false)
+  const [editandoColab,    setEditandoColab]    = useState(null)
+  const [eliminandoColab,  setEliminandoColab]  = useState(null)
   const cargado = useRef(false)
 
   /* Plan del usuario logueado para mostrar el límite */
@@ -146,15 +149,29 @@ export default function MiEquipoPage() {
             <UserPlus size={16} />
             Nuevo supervisor
           </button>
-        ) : (
-          <button
-            onClick={() => setShowModalColab(true)}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90 shadow-sm"
-            style={{ backgroundColor: '#af2154' }}>
-            <UserPlus size={16} />
-            Nuevo colaborador
-          </button>
-        )}
+        ) : (() => {
+            const limiteColAlcanzado = planMeta.max !== null
+              && colaboradores.length >= planMeta.max
+            return (
+              <button
+                onClick={() => {
+                  if (limiteColAlcanzado) {
+                    toast.error(`Has alcanzado el límite de tu plan (${planMeta.max} col./sup.)`)
+                    return
+                  }
+                  setEditandoColab(null)
+                  setShowModalColab(true)
+                }}
+                disabled={limiteColAlcanzado}
+                title={limiteColAlcanzado ? `Límite alcanzado: ${planMeta.max} col./sup.` : 'Agregar colaborador'}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ backgroundColor: '#af2154' }}>
+                <UserPlus size={16} />
+                Nuevo colaborador
+              </button>
+            )
+          })()
+        }
       </div>
 
       {/* Pestañas */}
@@ -182,6 +199,63 @@ export default function MiEquipoPage() {
 
       {/* ── TAB COLABORADORES ── */}
       {tab === 'colaboradores' && (
+        <>
+        {/* KPIs colaboradores */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="rounded-2xl border shadow-sm px-5 py-4 flex items-center gap-4"
+            style={{ backgroundColor: cardBg, borderColor: cardBorder }}>
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{ backgroundColor: '#af215418' }}>
+              <HardHat size={20} style={{ color: '#af2154' }} />
+            </div>
+            <div>
+              <p className="text-2xl font-extrabold leading-none" style={{ color: titleColor }}>
+                {colaboradores.length}
+              </p>
+              <p className="text-xs mt-1" style={{ color: subColor }}>Colaboradores registrados</p>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border shadow-sm px-5 py-4 flex items-center gap-4"
+            style={{ backgroundColor: cardBg, borderColor: cardBorder }}>
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{ backgroundColor: `${planMeta.color}22` }}>
+              <PlanIcon size={20} style={{ color: planMeta.color }} />
+            </div>
+            <div>
+              <p className="text-base font-bold leading-none" style={{ color: titleColor }}>
+                {planMeta.label}
+              </p>
+              <p className="text-xs mt-1" style={{ color: subColor }}>Plan contratado</p>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border shadow-sm px-5 py-4 flex items-center gap-4"
+            style={{ backgroundColor: cardBg, borderColor: cardBorder }}>
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{ backgroundColor: '#83266d18' }}>
+              <ShieldCheck size={20} style={{ color: '#83266d' }} />
+            </div>
+            <div>
+              {planMeta.max === null ? (
+                <span className="inline-flex items-center gap-1 font-semibold uppercase tracking-wider text-[11px] px-2 py-0.5 rounded-full"
+                  style={{ background: 'linear-gradient(90deg, #af2154 0%, #f58227 100%)', color: '#ffffff' }}>
+                  ∞ Ilimitado
+                </span>
+              ) : (() => {
+                const alcanzado = colaboradores.length >= planMeta.max
+                return (
+                  <p className="text-2xl font-extrabold leading-none"
+                    style={{ color: alcanzado ? '#ef4444' : titleColor }}>
+                    {colaboradores.length}/{planMeta.max}
+                  </p>
+                )
+              })()}
+              <p className="text-xs mt-1" style={{ color: subColor }}>Límite del plan</p>
+            </div>
+          </div>
+        </div>
+
         <div className="rounded-2xl border shadow-sm overflow-hidden"
           style={{ backgroundColor: cardBg, borderColor: cardBorder }}>
           <div className="px-6 py-4 flex items-center justify-between gap-4 border-b flex-wrap"
@@ -211,7 +285,7 @@ export default function MiEquipoPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr style={{ backgroundColor: headBg }}>
-                  {['Colaborador', 'DNI', 'Cargo / Área', 'Supervisor', 'Fecha ingreso'].map(h => (
+                  {['Colaborador', 'DNI', 'Cargo / Área', 'Supervisor', 'Fecha ingreso', 'Acciones'].map(h => (
                     <th key={h} className="px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wider"
                       style={{ color: headColor }}>{h}</th>
                   ))}
@@ -219,9 +293,9 @@ export default function MiEquipoPage() {
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={5} className="px-5 py-10 text-center text-sm" style={{ color: subColor }}>Cargando...</td></tr>
+                  <tr><td colSpan={6} className="px-5 py-10 text-center text-sm" style={{ color: subColor }}>Cargando...</td></tr>
                 ) : colaboradoresFiltrados.length === 0 ? (
-                  <tr><td colSpan={5} className="px-5 py-10 text-center text-sm" style={{ color: subColor }}>
+                  <tr><td colSpan={6} className="px-5 py-10 text-center text-sm" style={{ color: subColor }}>
                     {busqueda ? 'Sin resultados' : 'No hay colaboradores registrados'}
                   </td></tr>
                 ) : colaboradoresFiltrados.map(c => (
@@ -256,12 +330,37 @@ export default function MiEquipoPage() {
                         ? new Date(c.fechaIngreso).toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' })
                         : '—'}
                     </td>
+                    <td className="px-5 py-3.5">
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => { setEditandoColab(c); setShowModalColab(true) }}
+                          title="Editar colaborador"
+                          className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-all"
+                          style={{
+                            backgroundColor: dark ? '#1e293b' : '#fceef4',
+                            color: '#af2154',
+                            border: `1px solid ${dark ? '#334155' : '#f6ccdc'}`,
+                          }}>
+                          <Pencil size={13} /> Editar
+                        </button>
+                        <button onClick={() => setEliminandoColab(c)}
+                          title="Eliminar colaborador"
+                          className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-all"
+                          style={{
+                            backgroundColor: dark ? '#450a0a' : '#fff5f5',
+                            color: '#ef4444',
+                            border: `1px solid ${dark ? '#7f1d1d' : '#fecaca'}`,
+                          }}>
+                          <Trash2 size={13} /> Eliminar
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         </div>
+        </>
       )}
 
       {/* ── TAB SUPERVISORES ── */}
@@ -469,8 +568,21 @@ export default function MiEquipoPage() {
 
       {showModalColab && (
         <ModalColaborador dark={dark}
-          onClose={() => setShowModalColab(false)}
-          onGuardado={c => setColaboradores(prev => [c, ...prev])} />
+          colaborador={editandoColab}
+          onClose={() => { setShowModalColab(false); setEditandoColab(null) }}
+          onGuardado={c => {
+            setColaboradores(prev => {
+              const existe = prev.some(x => x.id === c.id)
+              return existe ? prev.map(x => x.id === c.id ? c : x) : [c, ...prev]
+            })
+          }} />
+      )}
+
+      {eliminandoColab && (
+        <ModalEliminarColaborador dark={dark}
+          colaborador={eliminandoColab}
+          onClose={() => setEliminandoColab(null)}
+          onEliminado={id => setColaboradores(prev => prev.filter(c => c.id !== id))} />
       )}
     </div>
   )

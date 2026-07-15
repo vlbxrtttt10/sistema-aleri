@@ -1,5 +1,6 @@
 package com.aleri.ssoma.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDate;
@@ -21,11 +22,18 @@ public class AsignacionEpp {
     private CategoriaEpp categoria;
 
     @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "epp_id")
+    @JsonIgnoreProperties({"empresa", "activo", "createdAt"})
+    private Epp epp;
+
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "colaborador_id", nullable = false)
+    @JsonIgnoreProperties({"empresa", "supervisor", "activo", "createdAt"})
     private Colaborador colaborador;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "empresa_id", nullable = false)
+    @JsonIgnoreProperties({"supervisores", "colaboradores", "plan", "usuario", "activo", "createdAt"})
     private Empresa empresa;
 
     @Column(name = "fecha_entrega", nullable = false)
@@ -49,6 +57,8 @@ public class AsignacionEpp {
     public void setNombre(String nombre) { this.nombre = nombre; }
     public CategoriaEpp getCategoria() { return categoria; }
     public void setCategoria(CategoriaEpp categoria) { this.categoria = categoria; }
+    public Epp getEpp() { return epp; }
+    public void setEpp(Epp epp) { this.epp = epp; }
     public Colaborador getColaborador() { return colaborador; }
     public void setColaborador(Colaborador colaborador) { this.colaborador = colaborador; }
     public Empresa getEmpresa() { return empresa; }

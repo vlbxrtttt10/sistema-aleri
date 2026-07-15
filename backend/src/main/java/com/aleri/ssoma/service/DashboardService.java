@@ -12,17 +12,20 @@ public class DashboardService {
 
     private final IncidenteRepository incidenteRepo;
     private final AsignacionEppRepository eppRepo;
+    private final EppRepository catalogoEppRepo;
     private final ColaboradorRepository colaboradorRepo;
     private final SupervisorRepository supervisorRepo;
     private final EmpresaRepository empresaRepo;
 
     public DashboardService(IncidenteRepository incidenteRepo,
             AsignacionEppRepository eppRepo,
+            EppRepository catalogoEppRepo,
             ColaboradorRepository colaboradorRepo,
             SupervisorRepository supervisorRepo,
             EmpresaRepository empresaRepo) {
         this.incidenteRepo = incidenteRepo;
         this.eppRepo = eppRepo;
+        this.catalogoEppRepo = catalogoEppRepo;
         this.colaboradorRepo = colaboradorRepo;
         this.supervisorRepo = supervisorRepo;
         this.empresaRepo = empresaRepo;
@@ -52,13 +55,13 @@ public class DashboardService {
     private DashboardResumenDto getResumenGlobal() {
         long totalColaboradores = colaboradorRepo.count();
         long totalIncidentes = incidenteRepo.count();
-        long totalEpps = eppRepo.count();
+        long totalUnidadesEpp = catalogoEppRepo.sumStockTotalGlobal(); // suma stockTotal del catálogo
         long cerrados = incidenteRepo.countByEstado(EstadoIncidente.CERRADO);
         long totalSupervisores = supervisorRepo.count();
 
         return new DashboardResumenDto(
                 totalIncidentes, 0L, 0L,
-                totalColaboradores, cerrados, totalEpps,
+                totalColaboradores, cerrados, totalUnidadesEpp,
                 "GLOBAL", (int) totalSupervisores, null, totalColaboradores
         );
     }
