@@ -130,6 +130,10 @@ public class EppService {
         return asignacionEppRepo.findByEmpresaAndActivoTrue(empresa);
     }
 
+    public List<AsignacionEpp> listarTodasAsignacionesActivas() {
+        return asignacionEppRepo.findByActivoTrue();
+    }
+
     @Transactional
     public AsignacionEpp asignarParaEmpresa(Empresa empresa, EppAsignacionRequest req) {
         Epp epp = eppRepo.findById(req.getEppId())

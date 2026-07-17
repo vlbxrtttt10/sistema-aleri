@@ -12,4 +12,5 @@ public interface SupervisorRepository extends JpaRepository<Supervisor, Long> {
     long countByEmpresaId(Long empresaId);
     long countByEmpresaIdAndActivoTrue(Long empresaId);
     void deleteByEmpresaId(Long empresaId);
+    long countByActivoTrue();
 }

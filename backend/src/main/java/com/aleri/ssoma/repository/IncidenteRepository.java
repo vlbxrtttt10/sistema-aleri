@@ -30,6 +30,10 @@ public interface IncidenteRepository extends JpaRepository<Incidente, Long> {
 
     long countByEmpresaId(Long empresaId);
     void deleteByEmpresaId(Long empresaId);
+    long countByTipo(TipoIncidente tipo);
+
+    @Query("SELECT COUNT(i) FROM Incidente i WHERE i.fechaOcurrencia BETWEEN :inicio AND :fin")
+    long countByFechaOcurrenciaBetween(@Param("inicio") LocalDate inicio, @Param("fin") LocalDate fin);
 
     /* Para autogenerar el código secuencial por año (INC-2026-001) */
     @Query("SELECT COUNT(i) FROM Incidente i WHERE i.empresa = :empresa AND i.codigo LIKE :prefijo")

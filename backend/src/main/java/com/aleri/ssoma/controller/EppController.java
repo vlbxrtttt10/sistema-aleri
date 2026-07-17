@@ -110,6 +110,12 @@ public class EppController {
     public ResponseEntity<?> listarAsignaciones(@AuthenticationPrincipal Usuario usuario,
                                                  @RequestParam(required = false) Long empresaId) {
         try {
+            String rol = usuario.getRol() != null ? usuario.getRol().name() : "";
+            boolean esAdmin = rol.equals("ADMIN") || rol.equals("SUBADMIN");
+            // Admin sin empresa seleccionada → devuelve todas las asignaciones globales
+            if (esAdmin && empresaId == null) {
+                return ResponseEntity.ok(eppService.listarTodasAsignacionesActivas());
+            }
             Empresa empresa = resolverEmpresa(usuario, empresaId);
             return ResponseEntity.ok(eppService.listarAsignacionesPorEmpresa(empresa));
         } catch (IllegalArgumentException e) {

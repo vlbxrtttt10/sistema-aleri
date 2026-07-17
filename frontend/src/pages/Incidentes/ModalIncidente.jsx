@@ -243,7 +243,7 @@ export default function ModalIncidente({ dark, incidenteId, onClose, onGuardado 
             </div>
             <div>
               <p className="font-semibold text-sm" style={{ color: titleColor }}>
-                {isEdit ? 'Editar incidente' : 'Nuevo incidente'}
+                {isEdit ? 'Editar' : 'Nuevo incidente o Accidente'}
               </p>
               <p className="text-xs mt-0.5" style={{ color: subColor }}>
                 Completa las 6 secciones del registro SSOMA

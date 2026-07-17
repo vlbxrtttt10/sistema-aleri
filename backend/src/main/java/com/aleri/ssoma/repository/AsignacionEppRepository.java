@@ -15,6 +15,7 @@ public interface AsignacionEppRepository extends JpaRepository<AsignacionEpp, Lo
     List<AsignacionEpp> findByEmpresaAndActivoTrue(Empresa empresa);
     long countByEmpresaAndActivoTrue(Empresa empresa);
     long countByActivoTrue();
+    List<AsignacionEpp> findByActivoTrue();
     long countByEmpresaId(Long empresaId);
     void deleteByEmpresaId(Long empresaId);
 
@@ -22,6 +23,13 @@ public interface AsignacionEppRepository extends JpaRepository<AsignacionEpp, Lo
            "AND a.activo = true AND a.fechaVencimiento BETWEEN :hoy AND :limite")
     List<AsignacionEpp> findProximosAVencer(
         @Param("empresa") Empresa empresa,
+        @Param("hoy") LocalDate hoy,
+        @Param("limite") LocalDate limite
+    );
+
+    @Query("SELECT COUNT(a) FROM AsignacionEpp a WHERE a.activo = true " +
+           "AND a.fechaVencimiento BETWEEN :hoy AND :limite")
+    long countProximosAVencerGlobal(
         @Param("hoy") LocalDate hoy,
         @Param("limite") LocalDate limite
     );

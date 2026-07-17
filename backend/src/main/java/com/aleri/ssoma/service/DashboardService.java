@@ -53,15 +53,23 @@ public class DashboardService {
 
     /* Resumen consolidado de toda la plataforma (solo admin sin filtro) */
     private DashboardResumenDto getResumenGlobal() {
-        long totalColaboradores = colaboradorRepo.count();
-        long totalIncidentes = incidenteRepo.count();
-        long totalUnidadesEpp = catalogoEppRepo.sumStockTotalGlobal(); // suma stockTotal del catálogo
-        long cerrados = incidenteRepo.countByEstado(EstadoIncidente.CERRADO);
-        long totalSupervisores = supervisorRepo.count();
+        LocalDate hoy = LocalDate.now();
+        LocalDate inicioMes = hoy.withDayOfMonth(1);
+        LocalDate fin30dias = hoy.plusDays(30);
+
+        long totalColaboradores = colaboradorRepo.countByActivoTrue();
+        long totalIncidentes    = incidenteRepo.countByFechaOcurrenciaBetween(inicioMes, hoy);
+        long eppsAsignados      = eppRepo.countByActivoTrue();
+        long cerrados           = incidenteRepo.countByEstado(EstadoIncidente.CERRADO);
+        long totalSupervisores  = supervisorRepo.countByActivoTrue();
+        long eppsVencer         = eppRepo.countProximosAVencerGlobal(hoy, fin30dias);
+        long accidentes         = incidenteRepo.countByTipo(TipoIncidente.ACCIDENTE_LEVE)
+                                + incidenteRepo.countByTipo(TipoIncidente.ACCIDENTE_INCAPACITANTE)
+                                + incidenteRepo.countByTipo(TipoIncidente.ACCIDENTE_MORTAL);
 
         return new DashboardResumenDto(
-                totalIncidentes, 0L, 0L,
-                totalColaboradores, cerrados, totalUnidadesEpp,
+                totalIncidentes, accidentes, eppsVencer,
+                totalColaboradores, cerrados, eppsAsignados,
                 "GLOBAL", (int) totalSupervisores, null, totalColaboradores
         );
     }
@@ -70,16 +78,16 @@ public class DashboardService {
     private DashboardResumenDto getResumenEmpresa(Empresa empresa) {
         LocalDate hoy = LocalDate.now();
         LocalDate inicioMes = hoy.withDayOfMonth(1);
-        LocalDate fin15dias = hoy.plusDays(15);
+        LocalDate fin30dias = hoy.plusDays(30);
 
         long incidentesMes = incidenteRepo.countByEmpresaAndFechaOcurrenciaBetween(empresa, inicioMes, hoy);
         long accidentesMes = incidenteRepo.countByEmpresaAndTipo(empresa, TipoIncidente.ACCIDENTE_LEVE)
                 + incidenteRepo.countByEmpresaAndTipo(empresa, TipoIncidente.ACCIDENTE_INCAPACITANTE)
                 + incidenteRepo.countByEmpresaAndTipo(empresa, TipoIncidente.ACCIDENTE_MORTAL);
-        long eppsVencer = eppRepo.findProximosAVencer(empresa, hoy, fin15dias).size();
+        long eppsVencer = eppRepo.findProximosAVencer(empresa, hoy, fin30dias).size();
         long colaboradores = colaboradorRepo.countByEmpresaAndActivoTrue(empresa);
         long cerrados = incidenteRepo.countByEmpresaAndEstado(empresa, EstadoIncidente.CERRADO);
-        long eppsAsig = eppRepo.countByEmpresaAndActivoTrue(empresa);
+        long eppsAsig = eppRepo.findByEmpresaAndActivoTrue(empresa).size();
         int supUsados = (int) supervisorRepo.countByEmpresaAndActivoTrue(empresa);
         Plan plan = empresa.getPlan();
 

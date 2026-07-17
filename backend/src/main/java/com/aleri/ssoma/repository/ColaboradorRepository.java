@@ -14,4 +14,5 @@ public interface ColaboradorRepository extends JpaRepository<Colaborador, Long> 
     long countByEmpresaId(Long empresaId);
     void deleteByEmpresaId(Long empresaId);
     boolean existsByDni(String dni);
+    long countByActivoTrue();
 }
