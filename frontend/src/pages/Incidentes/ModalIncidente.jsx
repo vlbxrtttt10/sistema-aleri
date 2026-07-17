@@ -61,10 +61,11 @@ function fileToBase64(file) {
   })
 }
 
-export default function ModalIncidente({ dark, incidenteId, onClose, onGuardado }) {
+export default function ModalIncidente({ dark, incidenteId, onClose, onGuardado, soloLectura = false }) {
   const isEdit = Boolean(incidenteId)
   const [seccion, setSeccion] = useState(1)
   const [cargando, setCargando] = useState(isEdit)
+  const [colaboradores, setColaboradores] = useState([])
 
   const { register, handleSubmit, control, setValue, watch, reset, formState: { errors, isSubmitting } } = useForm({
     defaultValues: {
@@ -76,6 +77,7 @@ export default function ModalIncidente({ dark, incidenteId, onClose, onGuardado 
       planta: '',
       proyecto: '',
       ubicacionDetalle: '',
+      implicadoColaboradorId: '',
       implicadoNombre: '',
       implicadoDni: '',
       implicadoPuesto: '',
@@ -111,6 +113,32 @@ export default function ModalIncidente({ dark, incidenteId, onClose, onGuardado 
   const firmaReportante = watch('firmaReportante')
   const firmaJefe = watch('firmaJefeArea')
   const firmaResp = watch('firmaResponsableSeguridad')
+
+  /* Cargar colaboradores de la empresa para el selector del implicado */
+  useEffect(() => {
+    api.get('/colaboradores').then(res => setColaboradores(res.data)).catch(() => {})
+  }, [])
+
+  /* Al elegir un colaborador de la lista, autocompletar sus datos */
+  const handleSelectColaborador = (e) => {
+    const id = e.target.value
+    setValue('implicadoColaboradorId', id)
+    const col = colaboradores.find(c => String(c.id) === id)
+    if (col) {
+      setValue('implicadoNombre', col.nombre || '')
+      setValue('implicadoDni', col.dni || '')
+      setValue('implicadoPuesto', col.cargo || '')
+      setValue('implicadoArea', col.area || '')
+    }
+  }
+
+  /* El backend no persiste implicadoColaboradorId: al editar, deducir el select por DNI */
+  const implicadoDni = watch('implicadoDni')
+  useEffect(() => {
+    if (!isEdit || !implicadoDni || colaboradores.length === 0) return
+    const col = colaboradores.find(c => c.dni === implicadoDni)
+    if (col) setValue('implicadoColaboradorId', String(col.id))
+  }, [isEdit, implicadoDni, colaboradores, setValue])
 
   /* Cargar incidente al editar */
   useEffect(() => {
@@ -162,8 +190,9 @@ export default function ModalIncidente({ dark, incidenteId, onClose, onGuardado 
   /* ─── Submit ─── */
   const onSubmit = (data) => {
     /* Normalizar tipos */
+    const { implicadoColaboradorId, ...resto } = data
     const payload = {
-      ...data,
+      ...resto,
       fechaReporte: data.fechaReporte || null,
       implicadoAntiguedadMeses: data.implicadoAntiguedadMeses === ''
         ? null : Number(data.implicadoAntiguedadMeses),
@@ -239,14 +268,15 @@ export default function ModalIncidente({ dark, incidenteId, onClose, onGuardado 
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center"
               style={{ backgroundColor: '#af215418' }}>
-              {isEdit ? <Pencil size={17} style={{ color: '#af2154' }} /> : <AlertTriangle size={17} style={{ color: '#af2154' }} />}
+              {soloLectura ? <FileText size={17} style={{ color: '#af2154' }} />
+                : isEdit ? <Pencil size={17} style={{ color: '#af2154' }} /> : <AlertTriangle size={17} style={{ color: '#af2154' }} />}
             </div>
             <div>
               <p className="font-semibold text-sm" style={{ color: titleColor }}>
-                {isEdit ? 'Editar' : 'Nuevo incidente o Accidente'}
+                {soloLectura ? 'Ver incidente' : isEdit ? 'Editar' : 'Nuevo incidente o Accidente'}
               </p>
               <p className="text-xs mt-0.5" style={{ color: subColor }}>
-                Completa las 6 secciones del registro SSOMA
+                {soloLectura ? 'Consulta de las 6 secciones del registro SSOMA' : 'Completa las 6 secciones del registro SSOMA'}
               </p>
             </div>
           </div>
@@ -289,6 +319,7 @@ export default function ModalIncidente({ dark, incidenteId, onClose, onGuardado 
           {/* Form */}
           <form id="form-incidente" onSubmit={handleSubmit(onSubmit)}
             className="flex-1 overflow-y-auto p-6">
+            <fieldset disabled={soloLectura} style={{ border: 0, margin: 0, padding: 0 }}>
 
             {cargando ? (
               <p className="text-center text-sm py-10" style={{ color: subColor }}>Cargando incidente...</p>
@@ -382,6 +413,23 @@ export default function ModalIncidente({ dark, incidenteId, onClose, onGuardado 
             {seccion === 2 && (
               <div className="space-y-4">
                 <h3 className="text-base font-bold" style={{ color: titleColor }}>2. Datos del implicado</h3>
+
+                <div>
+                  <label className={labelCls} style={{ color: labelColor }}>Colaborador</label>
+                  <select className={inputCls} style={inputStyle}
+                    name="implicadoColaboradorId"
+                    value={watch('implicadoColaboradorId') || ''}
+                    onFocus={focusIn} onBlur={focusOut}
+                    onChange={handleSelectColaborador}>
+                    <option value="">— Selecciona de tu equipo —</option>
+                    {colaboradores.map(c => (
+                      <option key={c.id} value={c.id}>{c.nombre} · {c.dni}</option>
+                    ))}
+                  </select>
+                  <p className="mt-1 text-[11px]" style={{ color: subColor }}>
+                    Si el implicado no pertenece a tu equipo (visitante, contratista), completa los datos manualmente abajo.
+                  </p>
+                </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
@@ -707,11 +755,11 @@ export default function ModalIncidente({ dark, incidenteId, onClose, onGuardado 
                   <p className="text-sm font-semibold" style={{ color: titleColor }}>Firmas digitales</p>
 
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-                    <FirmaCanvas dark={dark} value={firmaReportante} label="Reportante"
+                    <FirmaCanvas dark={dark} value={firmaReportante} label="Reportante" disabled={soloLectura}
                       onChange={v => setValue('firmaReportante', v, { shouldDirty: true })} />
-                    <FirmaCanvas dark={dark} value={firmaJefe} label="Jefe de área"
+                    <FirmaCanvas dark={dark} value={firmaJefe} label="Jefe de área" disabled={soloLectura}
                       onChange={v => setValue('firmaJefeArea', v, { shouldDirty: true })} />
-                    <FirmaCanvas dark={dark} value={firmaResp} label="Responsable de seguridad"
+                    <FirmaCanvas dark={dark} value={firmaResp} label="Responsable de seguridad" disabled={soloLectura}
                       onChange={v => setValue('firmaResponsableSeguridad', v, { shouldDirty: true })} />
                   </div>
                 </div>
@@ -720,6 +768,7 @@ export default function ModalIncidente({ dark, incidenteId, onClose, onGuardado 
 
             </>
             )}
+            </fieldset>
           </form>
         </div>
 
@@ -747,16 +796,18 @@ export default function ModalIncidente({ dark, incidenteId, onClose, onGuardado 
             <button type="button" onClick={onClose}
               className="px-4 py-2 rounded-xl text-sm font-medium border"
               style={{ borderColor: inputBd, color: subColor }}>
-              Cancelar
+              {soloLectura ? 'Cerrar' : 'Cancelar'}
             </button>
-            <button type="submit" form="form-incidente" disabled={isSubmitting || cargando}
-              className="flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold text-white disabled:opacity-60"
-              style={{ backgroundColor: '#af2154' }}>
-              <Upload size={14} />
-              {isSubmitting
-                ? (isEdit ? 'Guardando...' : 'Registrando...')
-                : (isEdit ? 'Guardar cambios' : 'Registrar incidente')}
-            </button>
+            {!soloLectura && (
+              <button type="submit" form="form-incidente" disabled={isSubmitting || cargando}
+                className="flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold text-white disabled:opacity-60"
+                style={{ backgroundColor: '#af2154' }}>
+                <Upload size={14} />
+                {isSubmitting
+                  ? (isEdit ? 'Guardando...' : 'Registrando...')
+                  : (isEdit ? 'Guardar cambios' : 'Registrar incidente')}
+              </button>
+            )}
           </div>
         </div>
       </div>

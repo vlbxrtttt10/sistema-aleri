@@ -1,11 +1,14 @@
 package com.aleri.ssoma.controller;
 
+import com.aleri.ssoma.dto.IncidenteDetalleDto;
 import com.aleri.ssoma.entity.Incidente;
 import com.aleri.ssoma.entity.FotoIncidente;
 import com.aleri.ssoma.entity.ReporteAnalisis;
 import com.aleri.ssoma.entity.Usuario;
 import com.aleri.ssoma.repository.IncidenteRepository;
 import com.aleri.ssoma.repository.ReporteAnalisisRepository;
+import com.aleri.ssoma.service.IncidenteService;
+import com.aleri.ssoma.service.InformePdfService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -13,6 +16,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
+import java.io.IOException;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
@@ -23,15 +27,21 @@ public class AnalisisController {
 
     private final IncidenteRepository incidenteRepo;
     private final ReporteAnalisisRepository analisisRepo;
+    private final IncidenteService incidenteService;
+    private final InformePdfService informePdfService;
     private final RestTemplate restTemplate = new RestTemplate();
 
     @Value("${app.anthropic.api-key}")
     private String apiKey;
 
     public AnalisisController(IncidenteRepository incidenteRepo,
-                              ReporteAnalisisRepository analisisRepo) {
+                              ReporteAnalisisRepository analisisRepo,
+                              IncidenteService incidenteService,
+                              InformePdfService informePdfService) {
         this.incidenteRepo = incidenteRepo;
         this.analisisRepo  = analisisRepo;
+        this.incidenteService = incidenteService;
+        this.informePdfService = informePdfService;
     }
 
     /** Devuelve análisis cacheado si ya existe; si no, llama a Claude y lo guarda. */
@@ -111,6 +121,44 @@ public class AnalisisController {
         }
     }
 
+    /** Descarga el informe PDF con los datos del incidente y el análisis de la IA ya generado. */
+    @GetMapping("/analizar/{incidenteId}/pdf")
+    public ResponseEntity<?> descargarPdf(@AuthenticationPrincipal Usuario usuario,
+                                          @PathVariable Long incidenteId) {
+        ReporteAnalisis ra = analisisRepo.findTopByIncidenteIdOrderByCreatedAtDesc(incidenteId).orElse(null);
+        if (ra == null) {
+            return ResponseEntity.badRequest().body(Map.of("mensaje", "Este incidente aún no tiene un análisis generado"));
+        }
+
+        try {
+            IncidenteDetalleDto detalle = incidenteService.detalle(usuario, incidenteId);
+            String fecha = ra.getCreatedAt().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
+            byte[] pdf = informePdfService.generarInformeAnalisis(detalle, ra.getAnalisis(), fecha);
+
+            String nombreArchivo = "informe-" + (detalle.getCodigo() != null ? detalle.getCodigo() : incidenteId) + ".pdf";
+            return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + nombreArchivo)
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(pdf);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("mensaje", e.getMessage()));
+        } catch (IOException e) {
+            return ResponseEntity.internalServerError().body(Map.of("mensaje", "Error al generar el PDF"));
+        }
+    }
+
+    /** Elimina un registro de análisis del historial (limpieza de duplicados). */
+    @DeleteMapping("/analisis/{id}")
+    public ResponseEntity<?> eliminarAnalisis(@AuthenticationPrincipal Usuario usuario,
+                                              @PathVariable Long id) {
+        ReporteAnalisis ra = analisisRepo.findById(id).orElse(null);
+        if (ra == null || !ra.getIncidente().getEmpresa().getId().equals(usuario.getEmpresa().getId())) {
+            return ResponseEntity.badRequest().body(Map.of("mensaje", "Análisis no encontrado"));
+        }
+        analisisRepo.delete(ra);
+        return ResponseEntity.ok(Map.of("mensaje", "Análisis eliminado"));
+    }
+
     /** Historial de análisis de la empresa del usuario autenticado. */
     @GetMapping("/historial")
     public ResponseEntity<?> historial(@AuthenticationPrincipal Usuario usuario) {
@@ -127,15 +175,16 @@ public class AnalisisController {
                 .trim();
             if (preview.length() > 120) preview = preview.substring(0, 120) + "...";
 
-            return Map.<String, Object>of(
-                "id",          ra.getId(),
-                "incidenteId", ra.getIncidente().getId(),
-                "codigo",      ra.getIncidente().getCodigo(),
-                "tipo",        ra.getIncidente().getTipo(),
-                "area",        ra.getIncidente().getArea() != null ? ra.getIncidente().getArea() : "",
-                "fecha",       fmt.format(ra.getCreatedAt()),
-                "preview",     preview
-            );
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("id", ra.getId());
+            item.put("incidenteId", ra.getIncidente().getId());
+            item.put("codigo", ra.getIncidente().getCodigo());
+            item.put("tipo", ra.getIncidente().getTipo());
+            item.put("area", ra.getIncidente().getArea() != null ? ra.getIncidente().getArea() : "");
+            item.put("fecha", fmt.format(ra.getCreatedAt()));
+            item.put("preview", preview);
+            item.put("analisis", ra.getAnalisis());
+            return item;
         }).toList();
 
         return ResponseEntity.ok(result);

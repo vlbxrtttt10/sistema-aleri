@@ -4,6 +4,8 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
+import java.util.Set;
+
 /**
  * Datos para actualizar un supervisor.
  * Igual que CrearSupervisorRequest pero password es opcional
@@ -35,6 +37,8 @@ public class ActualizarSupervisorRequest {
     @Size(max = 100)
     private String area;
 
+    private Set<String> modulosVisibles;
+
     public String getNombre()           { return nombre; }
     public void   setNombre(String v)   { this.nombre = v; }
     public String getEmail()            { return email; }
@@ -49,4 +53,6 @@ public class ActualizarSupervisorRequest {
     public void   setCargo(String v)    { this.cargo = v; }
     public String getArea()             { return area; }
     public void   setArea(String v)     { this.area = v; }
+    public Set<String> getModulosVisibles()          { return modulosVisibles; }
+    public void        setModulosVisibles(Set<String> v) { this.modulosVisibles = v; }
 }

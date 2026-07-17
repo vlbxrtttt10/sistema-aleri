@@ -27,6 +27,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -271,6 +272,9 @@ public class EmpresaService {
 
     private SupervisorDto toSupervisorDto(Supervisor s) {
         Usuario u = s.getUsuario();
+        Set<String> modulos = s.getModulosVisibles().stream()
+                .map(Enum::name)
+                .collect(Collectors.toSet());
         return new SupervisorDto(
                 s.getId(),
                 u != null ? u.getId() : null,
@@ -281,7 +285,8 @@ public class EmpresaService {
                 s.getCargo(),
                 s.getArea(),
                 s.getActivo(),
-                s.getCreatedAt()
+                s.getCreatedAt(),
+                modulos
         );
     }
 

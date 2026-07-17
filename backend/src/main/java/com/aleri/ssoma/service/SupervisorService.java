@@ -4,6 +4,7 @@ import com.aleri.ssoma.dto.ActualizarSupervisorRequest;
 import com.aleri.ssoma.dto.CrearSupervisorRequest;
 import com.aleri.ssoma.dto.SupervisorDto;
 import com.aleri.ssoma.entity.Empresa;
+import com.aleri.ssoma.entity.Modulo;
 import com.aleri.ssoma.entity.Plan;
 import com.aleri.ssoma.entity.Rol;
 import com.aleri.ssoma.entity.Supervisor;
@@ -15,7 +16,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -36,7 +40,23 @@ public class SupervisorService {
         this.passwordEncoder = passwordEncoder;
     }
 
+    /** Módulos que una Empresa puede otorgar/quitar a sus supervisores. */
+    private static final Set<Modulo> MODULOS_ASIGNABLES =
+            EnumSet.of(Modulo.INCIDENTES, Modulo.EPPS, Modulo.REPORTES, Modulo.COLABORADORES);
+
     /* ─────────── Helpers ─────────── */
+
+    private Set<Modulo> parsearModulos(Set<String> valores) {
+        if (valores == null) return new HashSet<>(MODULOS_ASIGNABLES);
+        Set<Modulo> resultado = new HashSet<>();
+        for (String v : valores) {
+            try {
+                Modulo m = Modulo.valueOf(v.trim().toUpperCase());
+                if (MODULOS_ASIGNABLES.contains(m)) resultado.add(m);
+            } catch (IllegalArgumentException ignored) { /* valor inválido, se ignora */ }
+        }
+        return resultado;
+    }
 
     /**
      * Devuelve la empresa a la que el solicitante puede gestionar supervisores.
@@ -107,6 +127,7 @@ public class SupervisorService {
         s.setCargo(trimOrNull(req.getCargo()));
         s.setArea(trimOrNull(req.getArea()));
         s.setActivo(true);
+        s.setModulosVisibles(parsearModulos(req.getModulosVisibles()));
         supervisorRepo.save(s);
 
         return toDto(s);
@@ -142,6 +163,7 @@ public class SupervisorService {
         s.setTelefono(trimOrNull(req.getTelefono()));
         s.setCargo(trimOrNull(req.getCargo()));
         s.setArea(trimOrNull(req.getArea()));
+        s.setModulosVisibles(parsearModulos(req.getModulosVisibles()));
         supervisorRepo.save(s);
 
         return toDto(s);
@@ -178,6 +200,9 @@ public class SupervisorService {
 
     private SupervisorDto toDto(Supervisor s) {
         Usuario u = s.getUsuario();
+        Set<String> modulos = s.getModulosVisibles().stream()
+                .map(Enum::name)
+                .collect(Collectors.toSet());
         return new SupervisorDto(
                 s.getId(),
                 u != null ? u.getId() : null,
@@ -188,7 +213,8 @@ public class SupervisorService {
                 s.getCargo(),
                 s.getArea(),
                 s.getActivo(),
-                s.getCreatedAt()
+                s.getCreatedAt(),
+                modulos
         );
     }
 

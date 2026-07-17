@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
   FileBarChart2, Download, FileSpreadsheet, Brain,
   AlertTriangle, CheckCircle2, ShieldCheck, BookOpen,
-  Loader2, Clock, ChevronRight, RefreshCw, Search, Zap
+  Loader2, Clock, ChevronRight, RefreshCw, FileDown
 } from 'lucide-react'
 import api from '../../services/api'
 import toast from 'react-hot-toast'
@@ -15,6 +15,7 @@ export default function ReportesPage() {
   const incidenteId = searchParams.get('incidenteId')
 
   const [descargando,   setDescargando]   = useState(false)
+  const [descargandoPdf, setDescargandoPdf] = useState(false)
   const [analizando,    setAnalizando]    = useState(false)
   const [analisis,      setAnalisis]      = useState(null)
   const [cacheado,      setCacheado]      = useState(false)
@@ -22,9 +23,6 @@ export default function ReportesPage() {
   const [historial,     setHistorial]     = useState([])
   const [loadingHist,   setLoadingHist]   = useState(true)
   const [seleccionado,  setSeleccionado]  = useState(null)
-  const [incidentes,    setIncidentes]    = useState([])
-  const [mostrarPicker, setMostrarPicker] = useState(false)
-  const [busqueda,      setBusqueda]      = useState('')
 
   // ── colores dinámicos igual que EmpresasPage ──
   const cardBg     = dark ? '#1e293b' : '#ffffff'
@@ -36,14 +34,20 @@ export default function ReportesPage() {
   const inputBd    = dark ? '#334155' : '#e5e7eb'
   const inputColor = dark ? '#f1f5f9' : '#1f2937'
 
+  const cargadoInicial = useRef(false)
   useEffect(() => {
+    if (cargadoInicial.current) return
+    cargadoInicial.current = true
     cargarHistorial()
-    cargarIncidentes()
   }, [])
 
+  const ultimoAnalizado = useRef(null)
   useEffect(() => {
-    if (incidenteId) analizarIncidente(incidenteId)
-  }, [incidenteId])
+    if (!incidenteId || loadingHist) return
+    if (ultimoAnalizado.current === incidenteId) return
+    ultimoAnalizado.current = incidenteId
+    analizarIncidente(incidenteId)
+  }, [incidenteId, loadingHist])
 
   function cargarHistorial() {
     setLoadingHist(true)
@@ -51,10 +55,6 @@ export default function ReportesPage() {
       .then(res => setHistorial(res.data))
       .catch(() => {})
       .finally(() => setLoadingHist(false))
-  }
-
-  function cargarIncidentes() {
-    api.get('/incidentes').then(res => setIncidentes(res.data)).catch(() => {})
   }
 
   function descargarIncidentes() {
@@ -76,12 +76,17 @@ export default function ReportesPage() {
   }
 
   function analizarIncidente(id) {
+    // Si ya está en el historial cargado, mostrarlo directo sin llamar al backend
+    const enHistorial = historial.find(h => h.incidenteId === Number(id))
+    if (enHistorial) {
+      mostrarDesdeHistorial(enHistorial)
+      return
+    }
     setAnalizando(true)
     setAnalisis(null)
     setCacheado(false)
     setFechaCache(null)
     setSeleccionado(Number(id))
-    setMostrarPicker(false)
     api.post(`/reportes/analizar/${id}`)
       .then(res => {
         setAnalisis(res.data.analisis)
@@ -93,11 +98,31 @@ export default function ReportesPage() {
       .finally(() => setAnalizando(false))
   }
 
-  const incidentesFiltrados = incidentes.filter(inc =>
-    inc.codigo?.toLowerCase().includes(busqueda.toLowerCase()) ||
-    inc.tipo?.toLowerCase().includes(busqueda.toLowerCase()) ||
-    inc.area?.toLowerCase().includes(busqueda.toLowerCase())
-  )
+  function mostrarDesdeHistorial(item) {
+    setSeleccionado(item.incidenteId)
+    setAnalisis(item.analisis)
+    setCacheado(true)
+    setFechaCache(item.fecha)
+  }
+
+  function descargarPdf() {
+    if (!seleccionado) return
+    setDescargandoPdf(true)
+    api.get(`/reportes/analizar/${seleccionado}/pdf`, { responseType: 'blob' })
+      .then(res => {
+        const url  = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }))
+        const link = document.createElement('a')
+        link.href  = url
+        link.setAttribute('download', `informe-${seleccionado}.pdf`)
+        document.body.appendChild(link)
+        link.click()
+        link.remove()
+        window.URL.revokeObjectURL(url)
+        toast.success('Informe PDF descargado')
+      })
+      .catch(() => toast.error('No se pudo generar el PDF'))
+      .finally(() => setDescargandoPdf(false))
+  }
 
   return (
     <div className="space-y-6">
@@ -137,66 +162,14 @@ export default function ReportesPage() {
       </div>
 
       {/* ── Encabezado IA ── */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div className="flex items-center gap-2">
-          <Brain size={22} style={{ color: '#7c3aed' }} />
-          <h2 className="text-lg font-bold" style={{ color: titleColor }}>Análisis IA de Incidentes</h2>
-          <span className="text-xs font-semibold px-2.5 py-1 rounded-full"
-            style={{ backgroundColor: dark ? '#2e1065' : '#f5f3ff', color: '#7c3aed' }}>
-            Claude AI
-          </span>
-        </div>
-        {!analisis && !analizando && (
-          <button
-            onClick={() => { setMostrarPicker(v => !v); setBusqueda('') }}
-            className="flex items-center gap-2 text-white text-sm font-semibold py-2 px-4 rounded-xl transition-all hover:opacity-90"
-            style={{ backgroundColor: '#7c3aed' }}
-          >
-            <Zap size={15} /> Analizar incidente
-          </button>
-        )}
+      <div className="flex items-center gap-2">
+        <Brain size={22} style={{ color: '#7c3aed' }} />
+        <h2 className="text-lg font-bold" style={{ color: titleColor }}>Análisis IA de Accidentes e Incidentes</h2>
+        <span className="text-xs font-semibold px-2.5 py-1 rounded-full"
+          style={{ backgroundColor: dark ? '#2e1065' : '#f5f3ff', color: '#7c3aed' }}>
+          AI
+        </span>
       </div>
-
-      {/* ── Picker de incidente ── */}
-      {mostrarPicker && (
-        <div className="rounded-2xl border shadow-sm overflow-hidden"
-          style={{ backgroundColor: cardBg, borderColor: '#7c3aed40' }}>
-          <div className="px-4 py-3 border-b flex items-center gap-2"
-            style={{ borderColor: cardBorder }}>
-            <Search size={15} style={{ color: subColor }} />
-            <input
-              autoFocus type="text"
-              placeholder="Buscar por código, tipo o área..."
-              value={busqueda}
-              onChange={e => setBusqueda(e.target.value)}
-              className="flex-1 bg-transparent text-sm outline-none"
-              style={{ color: titleColor }}
-            />
-          </div>
-          <div className="max-h-60 overflow-y-auto">
-            {incidentesFiltrados.length === 0 ? (
-              <p className="text-center py-6 text-sm" style={{ color: subColor }}>Sin resultados</p>
-            ) : incidentesFiltrados.map(inc => (
-              <button key={inc.id} onClick={() => analizarIncidente(inc.id)}
-                className="w-full text-left px-4 py-3 border-b flex items-center justify-between transition-colors"
-                style={{ borderColor: cardBorder }}
-                onMouseEnter={e => e.currentTarget.style.backgroundColor = dark ? '#334155' : '#f8fafc'}
-                onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}>
-                <div className="flex items-center gap-3">
-                  <span className="text-xs font-bold" style={{ color: '#7c3aed' }}>{inc.codigo}</span>
-                  <span className="text-xs px-1.5 py-0.5 rounded-full font-medium"
-                    style={{
-                      backgroundColor: inc.tipo === 'ACCIDENTE' ? (dark ? '#450a0a' : '#fff5f5') : (dark ? '#451a03' : '#fffbeb'),
-                      color: inc.tipo === 'ACCIDENTE' ? '#ef4444' : '#f59e0b',
-                    }}>{inc.tipo}</span>
-                  {inc.area && <span className="text-xs" style={{ color: subColor }}>{inc.area}</span>}
-                </div>
-                <span className="text-xs" style={{ color: subColor }}>{inc.fechaOcurrencia}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* ── Layout: historial + análisis ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -229,11 +202,11 @@ export default function ReportesPage() {
                 <Brain size={28} className="mx-auto mb-2" style={{ color: dark ? '#334155' : '#d1d5db' }} />
                 <p className="text-sm" style={{ color: subColor }}>Sin análisis anteriores</p>
                 <p className="text-xs mt-1" style={{ color: dark ? '#475569' : '#9ca3af' }}>
-                  Usa "Analizar incidente" para empezar
+                  Usa el botón "Analizar" desde Incidentes y Accidentes
                 </p>
               </div>
             ) : historial.map(item => (
-              <button key={item.id} onClick={() => analizarIncidente(item.incidenteId)}
+              <button key={item.id} onClick={() => mostrarDesdeHistorial(item)}
                 className="w-full text-left px-4 py-3 border-b flex items-start gap-3 transition-colors"
                 style={{
                   borderColor: cardBorder,
@@ -270,19 +243,19 @@ export default function ReportesPage() {
               style={{ backgroundColor: cardBg, borderColor: cardBorder }}>
               <Loader2 size={32} style={{ color: '#7c3aed' }} className="animate-spin" />
               <p className="font-medium" style={{ color: titleColor }}>Analizando el incidente con IA...</p>
-              <p className="text-sm" style={{ color: subColor }}>Claude está revisando los datos del evento</p>
+              <p className="text-sm" style={{ color: subColor }}>La IA está revisando los datos del evento</p>
             </div>
           )}
 
           {analisis && !analizando && (
             <div className="rounded-2xl border shadow-sm overflow-hidden"
               style={{ backgroundColor: cardBg, borderColor: dark ? '#4c1d95' : '#ddd6fe' }}>
-              <div className="px-5 py-3 border-b flex items-center justify-between"
+              <div className="px-5 py-3 border-b flex items-center justify-between flex-wrap gap-2"
                 style={{ backgroundColor: dark ? '#2e1065' : '#f5f3ff', borderColor: dark ? '#4c1d95' : '#ddd6fe' }}>
                 <div className="flex items-center gap-2">
                   <Brain size={16} style={{ color: '#7c3aed' }} />
                   <span className="text-sm font-semibold" style={{ color: dark ? '#c4b5fd' : '#5b21b6' }}>
-                    Análisis generado por Claude AI
+                    Análisis generado por AI
                   </span>
                   {cacheado && (
                     <span className="text-xs flex items-center gap-1" style={{ color: subColor }}>
@@ -291,12 +264,13 @@ export default function ReportesPage() {
                   )}
                 </div>
                 <button
-                  onClick={() => { setMostrarPicker(v => !v); setBusqueda('') }}
-                  className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition-all"
-                  style={{ color: '#7c3aed', borderColor: dark ? '#4c1d95' : '#c4b5fd' }}
-                  onMouseEnter={e => e.currentTarget.style.backgroundColor = dark ? '#4c1d95' : '#ede9fe'}
-                  onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}>
-                  <Zap size={12} /> Cambiar incidente
+                  onClick={descargarPdf}
+                  disabled={descargandoPdf}
+                  className="flex items-center gap-1.5 text-xs font-semibold text-white py-1.5 px-3 rounded-lg transition-all hover:opacity-90 disabled:opacity-60"
+                  style={{ backgroundColor: '#af2154' }}
+                >
+                  <FileDown size={13} />
+                  {descargandoPdf ? 'Generando...' : 'Descargar PDF'}
                 </button>
               </div>
               <div className="p-5 overflow-y-auto max-h-[480px]">
@@ -311,7 +285,7 @@ export default function ReportesPage() {
               <Brain size={36} style={{ color: dark ? '#334155' : '#d1d5db' }} />
               <p className="font-medium" style={{ color: rowText }}>Selecciona un incidente para analizar</p>
               <p className="text-sm max-w-sm" style={{ color: subColor }}>
-                Usa el botón "Analizar incidente" o selecciona uno del historial.
+                Usa el botón "Analizar" desde Incidentes y Accidentes, o selecciona uno del historial.
               </p>
             </div>
           )}

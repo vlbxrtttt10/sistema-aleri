@@ -12,34 +12,41 @@ import IncidentesPage from './pages/Incidentes/IncidentesPage.jsx'
 import ReportesPage from './pages/Reportes/ReportesPage.jsx'
 import EppsPage from './pages/Epps/EppsPage.jsx'
 
-/* Lee el rol del usuario logueado */
-function getRol() {
+/* Lee el usuario logueado completo */
+function getUsuario() {
   try {
-    return JSON.parse(localStorage.getItem('aleri-user') || '{}').rol || null
-  } catch (_) { return null }
+    return JSON.parse(localStorage.getItem('aleri-user') || '{}')
+  } catch (_) { return {} }
 }
 
 /**
  * Protege rutas:
  *  - si no hay token → /login
  *  - si se pasan `roles` y el rol del usuario no está en la lista → /dashboard con toast
+ *  - si se pasa `modulo` y el usuario es SUPERVISOR sin ese módulo habilitado → /dashboard con toast
  *
  * Importante: esto es solo UX. La verdadera autorización está en el backend
  * con @PreAuthorize. Si alguien manipula localStorage, igual el backend devuelve 403.
  */
-function PrivateRoute({ children, roles }) {
+function PrivateRoute({ children, roles, modulo }) {
   const token = localStorage.getItem('aleri-token')
   if (!token) return <Navigate to="/login" replace />
 
-  if (roles && roles.length > 0) {
-    const rol = getRol()
-    if (!roles.includes(rol)) {
-      // Disparamos el toast con id fijo: react-hot-toast colapsa duplicados
-      // (importante con React StrictMode que monta dos veces en dev).
-      toast.error('No tienes permiso para entrar a esa sección', { id: 'no-permiso' })
-      return <Navigate to="/dashboard" replace />
-    }
+  const usuario = getUsuario()
+  const rol = usuario.rol || null
+
+  if (roles && roles.length > 0 && !roles.includes(rol)) {
+    // Disparamos el toast con id fijo: react-hot-toast colapsa duplicados
+    // (importante con React StrictMode que monta dos veces en dev).
+    toast.error('No tienes permiso para entrar a esa sección', { id: 'no-permiso' })
+    return <Navigate to="/dashboard" replace />
   }
+
+  if (modulo && rol === 'SUPERVISOR' && Array.isArray(usuario.modulos) && !usuario.modulos.includes(modulo)) {
+    toast.error('No tienes permiso para entrar a esa sección', { id: 'no-permiso' })
+    return <Navigate to="/dashboard" replace />
+  }
+
   return children
 }
 
@@ -61,9 +68,10 @@ function App() {
 
         {/* Incidentes/accidentes: admin (vista global) + roles de empresa (su empresa) */}
         <Route path="/incidentes"
-          element={<PrivateRoute roles={['ADMIN', 'SUBADMIN', 'EMPRESA', 'SUPERVISOR', 'COLABORADOR']}><IncidentesPage /></PrivateRoute>} />
+          element={<PrivateRoute roles={['ADMIN', 'SUBADMIN', 'EMPRESA', 'SUPERVISOR', 'COLABORADOR']} modulo="INCIDENTES"><IncidentesPage /></PrivateRoute>} />
 
-        <Route path="/epps"          element={<EppsPage />} />
+        <Route path="/epps"
+          element={<PrivateRoute modulo="EPPS"><EppsPage /></PrivateRoute>} />
 
         {/* Rutas SOLO admin / subadmin */}
         <Route path="/colaboradores"
@@ -73,11 +81,12 @@ function App() {
         <Route path="/empresas/:id/dashboard"
           element={<PrivateRoute roles={['ADMIN', 'SUBADMIN']}><EmpresaDashboardPage /></PrivateRoute>} />
 
-        <Route path="/reportes"      element={<ReportesPage />} />
+        <Route path="/reportes"
+          element={<PrivateRoute modulo="REPORTES"><ReportesPage /></PrivateRoute>} />
 
         {/* Mi equipo: solo el dueño EMPRESA y supervisores */}
         <Route path="/mi-equipo"
-          element={<PrivateRoute roles={['EMPRESA', 'SUPERVISOR']}><MiEquipoPage /></PrivateRoute>} />
+          element={<PrivateRoute roles={['EMPRESA', 'SUPERVISOR']} modulo="COLABORADORES"><MiEquipoPage /></PrivateRoute>} />
 
         <Route path="/perfil"        element={<PerfilPage />} />
       </Route>

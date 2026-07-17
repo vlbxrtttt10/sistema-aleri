@@ -5,7 +5,11 @@ import {
   LogOut, FileBarChart2
 } from 'lucide-react'
 import LogoutTransition from '../components/LogoutTransition.jsx'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+
+function leerUsuario() {
+  try { return JSON.parse(localStorage.getItem('aleri-user') || '{}') } catch (_) { return {} }
+}
 
 /**
  * Items del menú por rol.
@@ -48,9 +52,16 @@ const NAV_POR_ROL = {
   ],
   SUPERVISOR: [
     ...ITEMS_BASE,
-    { to: '/mi-equipo',  icon: Users,         label: 'Mis colaboradores' },
+    { to: '/mi-equipo',  icon: Users,         label: 'Mis colaboradores', modulo: 'COLABORADORES' },
   ],
   COLABORADOR: ITEMS_BASE,
+}
+
+/* Mapea cada ruta base a su módulo — para filtrar el menú del SUPERVISOR según permisos */
+const MODULO_POR_RUTA = {
+  '/incidentes': 'INCIDENTES',
+  '/epps':       'EPPS',
+  '/reportes':   'REPORTES',
 }
 
 const rolLabel = {
@@ -62,17 +73,32 @@ const rolLabel = {
 
 export default function Sidebar({ collapsed, setCollapsed, dark }) {
   const [loggingOut, setLoggingOut] = useState(false)
+  const [userData, setUserData] = useState(leerUsuario)
   const navigate = useNavigate()
 
-  let userData = {}
-  try { userData = JSON.parse(localStorage.getItem('aleri-user') || '{}') } catch (_) {}
+  /* Refresca los datos de sesión cuando MainLayout confirma con el backend
+     los módulos vigentes (por si un admin/empresa cambió permisos recién). */
+  useEffect(() => {
+    const onUpdate = () => setUserData(leerUsuario())
+    window.addEventListener('aleri-user-updated', onUpdate)
+    return () => window.removeEventListener('aleri-user-updated', onUpdate)
+  }, [])
+
   const nombre  = userData.nombre || 'Usuario'
   const rol     = userData.rol    || 'ADMIN'
   const empresa = userData.empresaNombre || ''
   const inicial = nombre.charAt(0).toUpperCase()
+  const modulosUsuario = userData.modulos || null
 
-  /* Items del sidebar según rol del usuario logueado */
-  const navItems = NAV_POR_ROL[rol] || ITEMS_BASE
+  /* Items del sidebar según rol del usuario logueado.
+     Para SUPERVISOR, se filtra además por los módulos que su empresa le habilitó. */
+  let navItems = NAV_POR_ROL[rol] || ITEMS_BASE
+  if (rol === 'SUPERVISOR' && Array.isArray(modulosUsuario)) {
+    navItems = navItems.filter(item => {
+      const modulo = item.modulo || MODULO_POR_RUTA[item.to]
+      return !modulo || modulosUsuario.includes(modulo)
+    })
+  }
 
   const handleLogoutDone = () => {
     localStorage.removeItem('aleri-token')

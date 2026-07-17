@@ -1,6 +1,7 @@
 package com.aleri.ssoma.dto;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 
 /**
  * DTO de respuesta para listar supervisores en el front.
@@ -18,12 +19,13 @@ public class SupervisorDto {
     private String area;
     private Boolean activo;
     private LocalDateTime createdAt;
+    private Set<String> modulosVisibles;
 
     public SupervisorDto() {}
 
     public SupervisorDto(Long id, Long usuarioId, String nombre, String email,
                          String dni, String telefono, String cargo, String area,
-                         Boolean activo, LocalDateTime createdAt) {
+                         Boolean activo, LocalDateTime createdAt, Set<String> modulosVisibles) {
         this.id = id;
         this.usuarioId = usuarioId;
         this.nombre = nombre;
@@ -34,6 +36,7 @@ public class SupervisorDto {
         this.area = area;
         this.activo = activo;
         this.createdAt = createdAt;
+        this.modulosVisibles = modulosVisibles;
     }
 
     public Long getId() { return id; }
@@ -56,4 +59,6 @@ public class SupervisorDto {
     public void setActivo(Boolean activo) { this.activo = activo; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public Set<String> getModulosVisibles() { return modulosVisibles; }
+    public void setModulosVisibles(Set<String> modulosVisibles) { this.modulosVisibles = modulosVisibles; }
 }

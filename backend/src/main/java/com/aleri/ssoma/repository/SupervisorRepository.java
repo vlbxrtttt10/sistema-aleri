@@ -2,8 +2,10 @@ package com.aleri.ssoma.repository;
 
 import com.aleri.ssoma.entity.Empresa;
 import com.aleri.ssoma.entity.Supervisor;
+import com.aleri.ssoma.entity.Usuario;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
+import java.util.Optional;
 
 public interface SupervisorRepository extends JpaRepository<Supervisor, Long> {
     List<Supervisor> findByEmpresaAndActivoTrue(Empresa empresa);
@@ -13,4 +15,5 @@ public interface SupervisorRepository extends JpaRepository<Supervisor, Long> {
     long countByEmpresaIdAndActivoTrue(Long empresaId);
     void deleteByEmpresaId(Long empresaId);
     long countByActivoTrue();
+    Optional<Supervisor> findByUsuario(Usuario usuario);
 }

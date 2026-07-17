@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   AlertTriangle, Plus, Search, Pencil, Trash2,
   FileText, AlertOctagon, AlertCircle, Skull, CheckCircle2,
-  Clock, MapPin
+  Clock, MapPin, Eye, Brain
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useTheme } from '../../context/ThemeContext.jsx'
@@ -124,7 +124,9 @@ export default function IncidentesPage() {
   const [filtroEstado, setFiltroEstado] = useState('')
   const [showModal, setShowModal] = useState(false)
   const [editandoId, setEditandoId] = useState(null)
+  const [viendoId, setViendoId] = useState(null)
   const [eliminando, setEliminando] = useState(null)
+  const [analizados, setAnalizados] = useState(new Set())
   const cargado = useRef(false)
 
   const cardBg    = dark ? '#1e293b' : '#ffffff'
@@ -143,6 +145,7 @@ export default function IncidentesPage() {
     if (cargado.current) return
     cargado.current = true
     cargar()
+    cargarAnalizados()
   }, [])
 
   const cargar = () => {
@@ -153,9 +156,19 @@ export default function IncidentesPage() {
       .finally(() => setLoading(false))
   }
 
+  const cargarAnalizados = () => {
+    api.get('/reportes/historial')
+      .then(res => setAnalizados(new Set(res.data.map(h => h.incidenteId))))
+      .catch(() => {})
+  }
+
   const abrirCrear  = () => { setEditandoId(null); setShowModal(true) }
   const abrirEditar = (id) => { setEditandoId(id); setShowModal(true) }
   const cerrarModal = () => { setShowModal(false); setEditandoId(null) }
+  const abrirAnalizar = (id) => {
+    setAnalizados(prev => new Set(prev).add(id))
+    navigate(`/reportes?incidenteId=${id}`)
+  }
 
   /* Tras crear/editar el back devuelve detalle; lo convierto a resumen para la tabla */
   const handleGuardado = (det) => {
@@ -346,6 +359,30 @@ export default function IncidentesPage() {
                   <td className="px-5 py-3.5"><EstadoBadge estado={i.estado} dark={dark} /></td>
                   <td className="px-5 py-3.5">
                     <div className="flex items-center gap-2">
+                      <button onClick={() => setViendoId(i.id)}
+                        title="Ver"
+                        className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-all"
+                        style={{
+                          backgroundColor: dark ? '#1e293b' : '#f1f5f9',
+                          color: dark ? '#cbd5e1' : '#475569',
+                          border: `1px solid ${dark ? '#334155' : '#e2e8f0'}`,
+                        }}>
+                        <Eye size={13} /> Ver
+                      </button>
+                      <button onClick={() => abrirAnalizar(i.id)}
+                        title={analizados.has(i.id) ? 'Ver análisis' : 'Analizar'}
+                        className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-all"
+                        style={analizados.has(i.id) ? {
+                          backgroundColor: dark ? '#2e1065' : '#f5f3ff',
+                          color: '#7c3aed',
+                          border: `1px solid ${dark ? '#4c1d95' : '#ddd6fe'}`,
+                        } : {
+                          backgroundColor: dark ? '#0f2e28' : '#ecfdf5',
+                          color: '#059669',
+                          border: `1px solid ${dark ? '#065f46' : '#a7f3d0'}`,
+                        }}>
+                        <Brain size={13} /> {analizados.has(i.id) ? 'Ver análisis' : 'Analizar'}
+                      </button>
                       <button onClick={() => abrirEditar(i.id)}
                         title="Editar"
                         className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-all"
@@ -380,6 +417,14 @@ export default function IncidentesPage() {
           incidenteId={editandoId}
           onClose={cerrarModal}
           onGuardado={handleGuardado} />
+      )}
+
+      {viendoId && (
+        <ModalIncidente dark={dark}
+          incidenteId={viendoId}
+          soloLectura
+          onClose={() => setViendoId(null)}
+          onGuardado={() => {}} />
       )}
 
       {eliminando && (

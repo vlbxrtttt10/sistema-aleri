@@ -10,8 +10,9 @@ import { Eraser, PenLine } from 'lucide-react'
  *  - dark       boolean — afecta colores de bordes y trazo.
  *  - height     number  — alto del canvas en px (default 130)
  *  - label      string  — etiqueta superior opcional
+ *  - disabled   boolean — si true, no permite dibujar ni limpiar (solo lectura)
  */
-export default function FirmaCanvas({ value, onChange, dark, height = 130, label }) {
+export default function FirmaCanvas({ value, onChange, dark, height = 130, label, disabled = false }) {
   const canvasRef = useRef(null)
   const drawing = useRef(false)
   const lastPos = useRef({ x: 0, y: 0 })
@@ -55,13 +56,14 @@ export default function FirmaCanvas({ value, onChange, dark, height = 130, label
   }
 
   const start = (e) => {
+    if (disabled) return
     e.preventDefault()
     drawing.current = true
     lastPos.current = getPos(e)
   }
 
   const move = (e) => {
-    if (!drawing.current) return
+    if (disabled || !drawing.current) return
     e.preventDefault()
     const ctx = canvasRef.current.getContext('2d')
     const pos = getPos(e)
@@ -97,7 +99,7 @@ export default function FirmaCanvas({ value, onChange, dark, height = 130, label
       {label && (
         <div className="flex items-center justify-between">
           <span className="text-xs font-medium" style={{ color: labelColor }}>{label}</span>
-          {hasInk && (
+          {hasInk && !disabled && (
             <button type="button" onClick={limpiar}
               className="text-[11px] font-medium flex items-center gap-1 hover:opacity-80"
               style={{ color: '#ef4444' }}>
@@ -113,7 +115,7 @@ export default function FirmaCanvas({ value, onChange, dark, height = 130, label
           ref={canvasRef}
           width={520}
           height={height}
-          style={{ width: '100%', height: `${height}px`, touchAction: 'none', cursor: 'crosshair' }}
+          style={{ width: '100%', height: `${height}px`, touchAction: 'none', cursor: disabled ? 'default' : 'crosshair' }}
           onMouseDown={start} onMouseMove={move} onMouseUp={end} onMouseLeave={end}
           onTouchStart={start} onTouchMove={move} onTouchEnd={end}
         />

@@ -1,11 +1,19 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import {
-  UserPlus, Pencil, X, User, Mail, Lock, Hash, Phone, Briefcase, Building, Eye, EyeOff
+  UserPlus, Pencil, X, User, Mail, Lock, Hash, Phone, Briefcase, Building, Eye, EyeOff,
+  ShieldCheck, AlertTriangle, HardHat, FileBarChart2, Users
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../../services/api.js'
 import ModalPortal from '../../components/ModalPortal.jsx'
+
+const MODULOS_DISPONIBLES = [
+  { value: 'INCIDENTES',    label: 'Incidentes / Accidentes', icon: AlertTriangle },
+  { value: 'EPPS',          label: 'EPPs',                    icon: HardHat       },
+  { value: 'REPORTES',      label: 'Reportes',                icon: FileBarChart2 },
+  { value: 'COLABORADORES', label: 'Colaboradores',           icon: Users         },
+]
 
 /**
  * Modal para crear o editar un supervisor.
@@ -15,6 +23,18 @@ import ModalPortal from '../../components/ModalPortal.jsx'
 export default function ModalSupervisor({ dark, supervisor, onClose, onGuardado }) {
   const isEdit = Boolean(supervisor)
   const [showPwd, setShowPwd] = useState(false)
+  const [modulos, setModulos] = useState(() =>
+    isEdit && supervisor.modulosVisibles
+      ? new Set(supervisor.modulosVisibles)
+      : new Set(MODULOS_DISPONIBLES.map(m => m.value))
+  )
+  const toggleModulo = (value) => {
+    setModulos(prev => {
+      const next = new Set(prev)
+      next.has(value) ? next.delete(value) : next.add(value)
+      return next
+    })
+  }
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm({
     defaultValues: supervisor
       ? {
@@ -43,7 +63,7 @@ export default function ModalSupervisor({ dark, supervisor, onClose, onGuardado 
   const focusOut = e => { e.currentTarget.style.borderColor = inputBd; e.currentTarget.style.boxShadow = 'none' }
 
   const onSubmit = (data) => {
-    const payload = { ...data }
+    const payload = { ...data, modulosVisibles: Array.from(modulos) }
     if (isEdit && (!payload.password || payload.password.trim() === '')) {
       delete payload.password
     }
@@ -190,6 +210,37 @@ export default function ModalSupervisor({ dark, supervisor, onClose, onGuardado 
               <Field icon={Building}  label="Área"     name="area"     placeholder="Ej: Operaciones"
                 validation={{ maxLength: { value: 100, message: 'Máx. 100 caracteres' } }}
                 error={errors.area} />
+            </div>
+          </div>
+
+          {/* Bloque: permisos */}
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-widest mb-3 mt-2" style={{ color: subColor }}>
+              Permisos <span className="font-normal" style={{ textTransform: 'none', letterSpacing: 'normal' }}>· módulos que puede ver</span>
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {MODULOS_DISPONIBLES.map(({ value, label, icon: Icon }) => {
+                const activo = modulos.has(value)
+                return (
+                  <button key={value} type="button" onClick={() => toggleModulo(value)}
+                    className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border text-sm font-medium transition-all text-left"
+                    style={{
+                      backgroundColor: activo ? '#af215412' : inputBg,
+                      borderColor: activo ? '#af2154' : inputBd,
+                      color: activo ? '#af2154' : labelColor,
+                    }}>
+                    <div className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 border"
+                      style={{
+                        backgroundColor: activo ? '#af2154' : 'transparent',
+                        borderColor: activo ? '#af2154' : inputBd,
+                      }}>
+                      {activo && <ShieldCheck size={12} style={{ color: '#fff' }} />}
+                    </div>
+                    <Icon size={14} className="flex-shrink-0" />
+                    <span className="truncate">{label}</span>
+                  </button>
+                )
+              })}
             </div>
           </div>
 

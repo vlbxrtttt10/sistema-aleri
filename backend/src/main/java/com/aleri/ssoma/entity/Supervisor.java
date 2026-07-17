@@ -3,6 +3,8 @@ package com.aleri.ssoma.entity;
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "supervisores")
@@ -35,6 +37,15 @@ public class Supervisor {
     @Column(nullable = false)
     private Boolean activo = true;
 
+    @ElementCollection(fetch = FetchType.EAGER, targetClass = Modulo.class)
+    @Enumerated(EnumType.STRING)
+    @CollectionTable(
+            name = "supervisor_modulos",
+            joinColumns = @JoinColumn(name = "supervisor_id")
+    )
+    @Column(name = "modulo", nullable = false, length = 30)
+    private Set<Modulo> modulosVisibles = new HashSet<>();
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -57,5 +68,7 @@ public class Supervisor {
     public void setArea(String area) { this.area = area; }
     public Boolean getActivo() { return activo; }
     public void setActivo(Boolean activo) { this.activo = activo; }
+    public Set<Modulo> getModulosVisibles() { return modulosVisibles; }
+    public void setModulosVisibles(Set<Modulo> modulosVisibles) { this.modulosVisibles = modulosVisibles; }
     public LocalDateTime getCreatedAt() { return createdAt; }
 }
