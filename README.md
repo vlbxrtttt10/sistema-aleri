@@ -299,11 +299,11 @@ La app consume la misma API REST del sistema web. Para desarrollo local con emul
 - [x] Panel del supervisor con estadisticas e historial
 - [x] Formulario de reporte completo con fotos
 - [x] Conexion al backend en Render
-- [ ] Soporte offline (SQLite + cola de sincronizacion cuando recupere conexion)
-- [ ] Pantalla de detalle de incidente
-- [ ] Modulo de EPPs y vencimientos
-- [ ] Notificaciones push
-- [ ] Publicacion en Google Play y App Store
+- [x] Soporte offline (SQLite + cola de sincronizacion cuando recupere conexion)
+- [x] Pantalla de detalle de incidente
+- [x] Modulo de EPPs y vencimientos
+- [x] Notificaciones push
+- [x] Publicacion en Google Play y App Store
 
 ---
 
@@ -348,24 +348,6 @@ La app consume la misma API REST del sistema web. Para desarrollo local con emul
 | Correctivo   | Segun incidencia  | Equipo desarrollo |
 | Evolutivo    | Por sprint        | Equipo desarrollo |
 | Predictivo   | Continuo          | Sistema automatico|
-
----
-
-## Roadmap
-
-**v3.x — En curso**
-- [x] Dashboard con graficos SVG (dona, barras, linea)
-- [x] Metricas globales corregidas para vista Admin
-- [x] Seed de datos por empresa con estados variados de EPPs
-- [ ] Health check y panel de salud del sistema (Actuator)
-- [ ] Notificaciones por correo electronico (vencimientos, incidentes)
-
-**v4.x — Planificado**
-- [ ] Modulo de capacitaciones y evaluaciones
-- [ ] Modulo de inspecciones y auditorias IPERC
-- [ ] Exportacion de reportes a Excel y PDF mejorado
-- [ ] Facturacion y pagos de planes (Stripe / Culqi)
-- [ ] Aplicacion movil Flutter (SafeTrack AI Mobile)
 
 ---
 
