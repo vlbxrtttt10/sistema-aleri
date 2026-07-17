@@ -302,8 +302,6 @@ La app consume la misma API REST del sistema web. Para desarrollo local con emul
 - [x] Soporte offline (SQLite + cola de sincronizacion cuando recupere conexion)
 - [x] Pantalla de detalle de incidente
 - [x] Modulo de EPPs y vencimientos
-- [x] Notificaciones push
-- [x] Publicacion en Google Play y App Store
 
 ---
 
