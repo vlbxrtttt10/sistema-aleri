@@ -254,39 +254,55 @@ app:
 
 ## Aplicacion Movil — SafeTrack AI Mobile
 
-La aplicacion movil de SafeTrack AI esta diseñada para extender las capacidades del sistema web a dispositivos Android e iOS, permitiendo a supervisores y colaboradores operar en campo sin depender de un navegador de escritorio.
+Diseñada para supervisores en campo que no cuentan con una laptop. Permite registrar incidentes, accidentes y evidencias fotograficas directamente desde el lugar del hecho, conectandose al backend desplegado en Render cuando hay internet disponible.
 
 ### Tecnologia
-| Capa         | Tecnologia                    |
-|--------------|-------------------------------|
-| Framework    | React Native + Expo           |
-| Navegacion   | React Navigation              |
-| Estado       | Context API + AsyncStorage    |
-| API          | Axios (misma API REST del backend) |
-| Autenticacion| JWT almacenado en SecureStore |
+| Capa           | Tecnologia                              |
+|----------------|-----------------------------------------|
+| Framework      | Flutter (Dart)                          |
+| HTTP           | `http` (con timeouts configurados)      |
+| Almacenamiento | `shared_preferences`                    |
+| Camara         | `image_picker` (camara y galeria)       |
+| Autenticacion  | JWT en `flutter_secure_storage`         |
+| Fechas         | `intl`                                  |
+| Backend        | API REST Spring Boot en Render          |
+| Package ID     | `com.aleri.ssoma.ssoma_movil`           |
 
-### Funcionalidades previstas
+### Backend conectado
+```
+https://sistema-aleri.onrender.com/api
+```
+La app consume la misma API REST del sistema web. Para desarrollo local con emulador Android usar `http://10.0.2.2:8080/api`.
 
-**Supervisor (campo)**
-- Login y sesion persistente con JWT
-- Ver y gestionar colaboradores de su equipo
-- Registrar incidentes y accidentes desde el lugar del hecho
-- Adjuntar fotografias de evidencia directamente desde la camara
-- Consultar EPPs asignados y vencimientos proximos
-- Recibir notificaciones push de alertas de vencimiento
+### Pantallas implementadas (MVP)
 
-**Colaborador**
-- Ver sus EPPs asignados y fechas de vencimiento
-- Consultar historial de incidentes propios
-- Firmar digitalmente la conformidad de recepcion de EPPs
+**Login**
+- Autenticacion con email + contraseña via `POST /api/auth/login`
+- Sesion persistente: al reabrir la app verifica el token con `GET /api/auth/me`
+- Acceso exclusivo para rol `SUPERVISOR`
+
+**Home — Panel del Supervisor**
+- Header con nombre y empresa del usuario logueado
+- Tarjetas de estadisticas: total de reportes, abiertos, accidentes
+- Lista de incidentes propios con tipo, estado, fecha y area
+- Pull-to-refresh y manejo de error de conexion con boton "Reintentar"
+
+**Nuevo Reporte**
+- Selector visual de tipo: INCIDENTE, ACCIDENTE_LEVE, ACCIDENTE_INCAPACITANTE, ACCIDENTE_MORTAL
+- Datos de identificacion: fecha, hora, area y ubicacion
+- Persona implicada: dropdown de colaboradores registrados o ingreso manual (nombre, DNI, puesto, vinculacion, turno)
+- Descripcion del evento: tarea, agente causante, parte del cuerpo, naturaleza de la lesion
+- Evidencia fotografica: captura desde camara o galeria, miniaturas con eliminacion, envio en Base64
 
 ### Estado actual
-- [ ] Diseño de pantallas (Figma)
-- [ ] Configuracion del proyecto Expo
-- [ ] Modulo de autenticacion movil
-- [ ] Modulo de incidentes en campo
+- [x] Login con JWT y sesion persistente
+- [x] Panel del supervisor con estadisticas e historial
+- [x] Formulario de reporte completo con fotos
+- [x] Conexion al backend en Render
+- [ ] Soporte offline (SQLite + cola de sincronizacion cuando recupere conexion)
+- [ ] Pantalla de detalle de incidente
 - [ ] Modulo de EPPs y vencimientos
-- [ ] Notificaciones push (Expo Notifications)
+- [ ] Notificaciones push
 - [ ] Publicacion en Google Play y App Store
 
 ---
@@ -349,7 +365,7 @@ La aplicacion movil de SafeTrack AI esta diseñada para extender las capacidades
 - [ ] Modulo de inspecciones y auditorias IPERC
 - [ ] Exportacion de reportes a Excel y PDF mejorado
 - [ ] Facturacion y pagos de planes (Stripe / Culqi)
-- [ ] Aplicacion movil React Native (SafeTrack AI Mobile)
+- [ ] Aplicacion movil Flutter (SafeTrack AI Mobile)
 
 ---
 
