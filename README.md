@@ -1,4 +1,4 @@
-# SSOMA SaaS - Sistema de Seguridad y Salud Ocupacional en el Trabajo
+# SafeTrack AI — Sistema de Seguridad y Salud Ocupacional en el Trabajo
 
 Sistema web SaaS multi-tenant para la gestión integral de Seguridad, Salud Ocupacional y Medio Ambiente (SSOMA).  
 Permite a múltiples empresas gestionar sus procesos de seguridad bajo un modelo de planes de suscripción con límites controlados.
@@ -252,17 +252,107 @@ app:
 
 ---
 
+## Aplicacion Movil — SafeTrack AI Mobile
+
+La aplicacion movil de SafeTrack AI esta diseñada para extender las capacidades del sistema web a dispositivos Android e iOS, permitiendo a supervisores y colaboradores operar en campo sin depender de un navegador de escritorio.
+
+### Tecnologia
+| Capa         | Tecnologia                    |
+|--------------|-------------------------------|
+| Framework    | React Native + Expo           |
+| Navegacion   | React Navigation              |
+| Estado       | Context API + AsyncStorage    |
+| API          | Axios (misma API REST del backend) |
+| Autenticacion| JWT almacenado en SecureStore |
+
+### Funcionalidades previstas
+
+**Supervisor (campo)**
+- Login y sesion persistente con JWT
+- Ver y gestionar colaboradores de su equipo
+- Registrar incidentes y accidentes desde el lugar del hecho
+- Adjuntar fotografias de evidencia directamente desde la camara
+- Consultar EPPs asignados y vencimientos proximos
+- Recibir notificaciones push de alertas de vencimiento
+
+**Colaborador**
+- Ver sus EPPs asignados y fechas de vencimiento
+- Consultar historial de incidentes propios
+- Firmar digitalmente la conformidad de recepcion de EPPs
+
+### Estado actual
+- [ ] Diseño de pantallas (Figma)
+- [ ] Configuracion del proyecto Expo
+- [ ] Modulo de autenticacion movil
+- [ ] Modulo de incidentes en campo
+- [ ] Modulo de EPPs y vencimientos
+- [ ] Notificaciones push (Expo Notifications)
+- [ ] Publicacion en Google Play y App Store
+
+---
+
+## Plan de Mantenimiento del Sistema
+
+**Objetivo:** Garantizar el correcto funcionamiento de SafeTrack AI, prevenir fallas operativas, mantener la integridad y disponibilidad de la informacion SSOMA, y asegurar un servicio confiable para administradores, supervisores e inspectores.
+
+### 1. Mantenimiento Preventivo
+- Monitoreo periodico del rendimiento del servidor y la base de datos PostgreSQL
+- Limpieza de registros temporales (logs) y archivos innecesarios
+- Verificacion de copias de seguridad automaticas (`pg_dump` programado)
+- Revision de disponibilidad de los servicios backend (Spring Boot) y frontend (React)
+- Actualizacion de certificados SSL y configuraciones de seguridad
+- **Implementacion:** Spring Boot Actuator expone `/actuator/health` y `/actuator/metrics` para monitoreo continuo
+
+### 2. Mantenimiento Correctivo
+- Correccion de errores detectados por usuarios o durante el monitoreo
+- Restauracion de respaldos en caso de perdida o corrupcion de datos
+- Solucion de problemas de conectividad entre frontend, backend y base de datos
+- Recuperacion de servicios ante fallas del sistema
+- **Implementacion:** Paginas de error personalizadas en el frontend + logs estructurados en el backend con Logback
+
+### 3. Mantenimiento Evolutivo
+- Implementacion de nuevos modulos y funcionalidades solicitadas por los usuarios
+- Mejoras en la interfaz de usuario (UI/UX)
+- Optimizacion de procesos de incidentes, IPERC y gestion de EPPs
+- Integracion con nuevas tecnologias y servicios externos (correo, pagos, movil)
+- **Implementacion:** Roadmap versionado con tags Git (`fix-vX.X`, `feat-vX.X`)
+
+### 4. Mantenimiento Predictivo
+- Analisis de metricas de rendimiento para identificar posibles fallas futuras
+- Supervision del uso de recursos del servidor (CPU, memoria, almacenamiento)
+- Evaluacion periodica de tendencias de crecimiento de la base de datos
+- Generacion de alertas tempranas ante comportamientos anomalos
+- **Implementacion:** Panel de salud del sistema en el dashboard Admin con datos de `/actuator/metrics` + alertas configurables por umbral
+
+### Frecuencia de mantenimiento
+
+| Tipo         | Frecuencia        | Responsable       |
+|--------------|-------------------|-------------------|
+| Preventivo   | Semanal / Mensual | DevOps / Admin    |
+| Correctivo   | Segun incidencia  | Equipo desarrollo |
+| Evolutivo    | Por sprint        | Equipo desarrollo |
+| Predictivo   | Continuo          | Sistema automatico|
+
+---
+
 ## Roadmap
 
+**v3.x — En curso**
+- [x] Dashboard con graficos SVG (dona, barras, linea)
+- [x] Metricas globales corregidas para vista Admin
+- [x] Seed de datos por empresa con estados variados de EPPs
+- [ ] Health check y panel de salud del sistema (Actuator)
+- [ ] Notificaciones por correo electronico (vencimientos, incidentes)
+
+**v4.x — Planificado**
 - [ ] Modulo de capacitaciones y evaluaciones
-- [ ] Modulo de inspecciones y auditorias
-- [ ] Exportacion de reportes a Excel y PDF
-- [ ] Notificaciones por correo electronico
+- [ ] Modulo de inspecciones y auditorias IPERC
+- [ ] Exportacion de reportes a Excel y PDF mejorado
 - [ ] Facturacion y pagos de planes (Stripe / Culqi)
-- [ ] Aplicacion movil (React Native)
+- [ ] Aplicacion movil React Native (SafeTrack AI Mobile)
 
 ---
 
 ## Licencia
 
-Este proyecto es de uso privado. Todos los derechos reservados.
+Este proyecto es de uso privado. Todos los derechos reservados © SafeTrack AI.
