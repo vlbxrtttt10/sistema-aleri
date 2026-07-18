@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import {
   UserPlus, Shield, ShieldCheck, ToggleLeft, ToggleRight,
-  X, Eye, EyeOff, Users, Lock, Mail, User, Search, Pencil
+  X, Eye, EyeOff, Users, Lock, Mail, User, Search, Pencil, KeyRound, Save
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useTheme } from '../../context/ThemeContext.jsx'
@@ -236,6 +236,105 @@ function ModalUsuario({ dark, usuario, onClose, onGuardado }) {
   )
 }
 
+/* ── Tarjeta: API key de Anthropic (análisis IA) ── */
+function TarjetaApiKey({ dark }) {
+  const [apiKeyEnmascarada, setApiKeyEnmascarada] = useState('')
+  const [editando, setEditando] = useState(false)
+  const [valor, setValor] = useState('')
+  const [showValor, setShowValor] = useState(false)
+  const [guardando, setGuardando] = useState(false)
+  const [cargado, setCargado] = useState(false)
+
+  const cardBg    = dark ? '#1e293b' : '#ffffff'
+  const cardBorder= dark ? '#334155' : '#f1f5f9'
+  const titleColor= dark ? '#f1f5f9' : '#111827'
+  const subColor  = dark ? '#64748b' : '#6b7280'
+  const inputBg   = dark ? '#0f172a' : '#f9fafb'
+  const inputBd   = dark ? '#334155' : '#e5e7eb'
+  const inputColor= dark ? '#f1f5f9' : '#1f2937'
+
+  useEffect(() => {
+    api.get('/configuracion/anthropic-key')
+      .then(res => setApiKeyEnmascarada(res.data.apiKeyEnmascarada || ''))
+      .catch(() => {})
+      .finally(() => setCargado(true))
+  }, [])
+
+  const guardar = () => {
+    if (!valor.trim()) return
+    setGuardando(true)
+    api.put('/configuracion/anthropic-key', { apiKey: valor.trim() })
+      .then(res => {
+        setApiKeyEnmascarada(res.data.apiKeyEnmascarada || '')
+        setEditando(false)
+        setValor('')
+        toast.success('API key actualizada')
+      })
+      .catch(err => toast.error(err.response?.data?.mensaje || 'Error al guardar la API key'))
+      .finally(() => setGuardando(false))
+  }
+
+  if (!cargado) return null
+
+  return (
+    <div className="rounded-2xl border shadow-sm p-5"
+      style={{ backgroundColor: cardBg, borderColor: cardBorder }}>
+      <div className="flex items-center gap-3 mb-3">
+        <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+          style={{ backgroundColor: '#f5822718' }}>
+          <KeyRound size={17} style={{ color: '#f58227' }} />
+        </div>
+        <div>
+          <p className="font-semibold text-sm" style={{ color: titleColor }}>API key de Anthropic</p>
+          <p className="text-xs mt-0.5" style={{ color: subColor }}>Usada para generar el análisis IA de incidentes</p>
+        </div>
+      </div>
+
+      {!editando ? (
+        <div className="flex items-center gap-3 flex-wrap">
+          <code className="px-3 py-2 rounded-lg text-xs font-mono"
+            style={{ backgroundColor: inputBg, color: inputColor, border: `1px solid ${inputBd}` }}>
+            {apiKeyEnmascarada || 'No configurada'}
+          </code>
+          <button onClick={() => setEditando(true)}
+            className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-all"
+            style={{ backgroundColor: dark ? '#1e293b' : '#fceef4', color: '#af2154', border: `1px solid ${dark ? '#334155' : '#f6ccdc'}` }}>
+            <Pencil size={13} /> {apiKeyEnmascarada ? 'Cambiar' : 'Configurar'}
+          </button>
+        </div>
+      ) : (
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="relative flex-1 min-w-[240px]">
+            <input type={showValor ? 'text' : 'password'}
+              placeholder="sk-ant-api03-..."
+              value={valor}
+              onChange={e => setValor(e.target.value)}
+              className="w-full rounded-xl px-4 py-2.5 pr-11 text-sm border focus:outline-none transition-all font-mono"
+              style={{ backgroundColor: inputBg, borderColor: inputBd, color: inputColor }}
+              onFocus={e => { e.currentTarget.style.borderColor = '#af2154'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(175,33,84,0.12)' }}
+              onBlur={e => { e.currentTarget.style.borderColor = inputBd; e.currentTarget.style.boxShadow = 'none' }} />
+            <button type="button" onClick={() => setShowValor(!showValor)}
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 transition-colors"
+              style={{ color: subColor }}>
+              {showValor ? <EyeOff size={15} /> : <Eye size={15} />}
+            </button>
+          </div>
+          <button onClick={guardar} disabled={guardando || !valor.trim()}
+            className="flex items-center gap-1.5 text-xs font-semibold px-4 py-2.5 rounded-xl text-white transition-all hover:opacity-90 disabled:opacity-60"
+            style={{ backgroundColor: '#af2154' }}>
+            <Save size={13} /> {guardando ? 'Guardando...' : 'Guardar'}
+          </button>
+          <button onClick={() => { setEditando(false); setValor('') }} disabled={guardando}
+            className="text-xs font-medium px-3 py-2.5 rounded-xl border transition-colors"
+            style={{ borderColor: inputBd, color: subColor }}>
+            Cancelar
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 /* ── Página principal ── */
 export default function ColaboradoresPage() {
   const { dark } = useTheme()
@@ -338,6 +437,9 @@ export default function ColaboradoresPage() {
           Nuevo usuario
         </button>
       </div>
+
+      {/* ── API key de Anthropic ── */}
+      <TarjetaApiKey dark={dark} />
 
       {/* ── KPIs rápidos ── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

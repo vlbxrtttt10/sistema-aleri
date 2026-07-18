@@ -226,6 +226,9 @@ export default function ReportesPage() {
                         color: item.tipo === 'ACCIDENTE' ? '#ef4444' : '#f59e0b',
                       }}>{item.tipo}</span>
                   </div>
+                  {item.empresa && (
+                    <p className="text-xs font-medium mb-0.5" style={{ color: dark ? '#a78bfa' : '#7c3aed' }}>{item.empresa}</p>
+                  )}
                   {item.area && <p className="text-xs mb-1" style={{ color: subColor }}>{item.area}</p>}
                   <p className="text-xs leading-relaxed line-clamp-2" style={{ color: subColor }}>{item.preview}</p>
                   <p className="text-xs mt-1" style={{ color: dark ? '#475569' : '#9ca3af' }}>{item.fecha}</p>

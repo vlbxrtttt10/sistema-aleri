@@ -7,6 +7,7 @@ import RecentIncidents from '../../components/dashboard/RecentIncidents.jsx'
 import EppAlert from '../../components/dashboard/EppAlert.jsx'
 import PlanUsage from '../../components/dashboard/PlanUsage.jsx'
 import SelectorEmpresa from '../../components/dashboard/SelectorEmpresa.jsx'
+import SystemHealth from '../../components/dashboard/SystemHealth.jsx'
 import { useTheme } from '../../context/ThemeContext.jsx'
 import { isAdmin } from '../../services/session.js'
 import api from '../../services/api.js'
@@ -490,6 +491,7 @@ export default function DashboardPage() {
             <RecentIncidents dark={dark} />
           </div>
           <div className="space-y-4">
+            {esAdmin && <SystemHealth dark={dark} />}
             <EppAlert dark={dark} />
             <PlanUsage dark={dark} resumen={resumen}
               empresaSeleccionada={empresaSeleccionada}

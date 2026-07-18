@@ -1,6 +1,6 @@
+import { useEffect, useState } from 'react'
 import { AlertCircle, Clock, HardHat } from 'lucide-react'
-
-const epps = []
+import api from '../../services/api.js'
 
 function urgency(dias) {
   if (dias <= 5)  return { bg: '#fee2e2', bgDark: '#450a0a', color: '#dc2626', colorDark: '#fca5a5', label: 'Crítico' }
@@ -9,6 +9,38 @@ function urgency(dias) {
 }
 
 export default function EppAlert({ dark }) {
+  const [epps, setEpps] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    api.get('/epps/asignaciones')
+      .then(res => {
+        const hoy = new Date()
+        hoy.setHours(0, 0, 0, 0)
+        const limite = new Date(hoy)
+        limite.setDate(limite.getDate() + 15)
+
+        const proximos = (res.data || [])
+          .filter(a => a.activo && a.fechaVencimiento)
+          .map(a => {
+            const venc = new Date(a.fechaVencimiento + 'T00:00:00')
+            const dias = Math.round((venc - hoy) / (1000 * 60 * 60 * 24))
+            return {
+              nombre: a.nombre,
+              colaborador: a.colaborador?.nombre || '—',
+              area: a.colaborador?.area || '—',
+              dias,
+            }
+          })
+          .filter(a => a.dias >= 0 && a.dias <= 15)
+          .sort((a, b) => a.dias - b.dias)
+
+        setEpps(proximos)
+      })
+      .catch(() => setEpps([]))
+      .finally(() => setLoading(false))
+  }, [])
+
   const cardBg     = dark ? '#1e293b' : '#ffffff'
   const cardBorder = dark ? '#334155' : '#f1f5f9'
   const titleColor = dark ? '#f1f5f9' : '#111827'
@@ -45,7 +77,9 @@ export default function EppAlert({ dark }) {
 
       {/* Lista */}
       <div>
-        {epps.length === 0 ? (
+        {loading ? (
+          <p className="px-6 py-8 text-sm text-center" style={{ color: subColor }}>Cargando...</p>
+        ) : epps.length === 0 ? (
           <p className="px-6 py-8 text-sm text-center" style={{ color: subColor }}>
             Sin alertas por ahora
           </p>

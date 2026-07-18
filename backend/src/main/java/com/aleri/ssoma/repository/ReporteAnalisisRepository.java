@@ -8,4 +8,6 @@ import java.util.Optional;
 public interface ReporteAnalisisRepository extends JpaRepository<ReporteAnalisis, Long> {
     Optional<ReporteAnalisis> findTopByIncidenteIdOrderByCreatedAtDesc(Long incidenteId);
     List<ReporteAnalisis> findByIncidenteEmpresaIdOrderByCreatedAtDesc(Long empresaId);
+    List<ReporteAnalisis> findByIncidenteId(Long incidenteId);
+    List<ReporteAnalisis> findAllByOrderByCreatedAtDesc();
 }

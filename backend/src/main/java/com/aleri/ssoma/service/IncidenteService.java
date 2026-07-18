@@ -4,6 +4,7 @@ import com.aleri.ssoma.dto.*;
 import com.aleri.ssoma.entity.*;
 import com.aleri.ssoma.repository.ColaboradorRepository;
 import com.aleri.ssoma.repository.IncidenteRepository;
+import com.aleri.ssoma.repository.ReporteAnalisisRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,11 +20,14 @@ public class IncidenteService {
 
     private final IncidenteRepository  incidenteRepo;
     private final ColaboradorRepository colaboradorRepo;
+    private final ReporteAnalisisRepository reporteAnalisisRepo;
 
     public IncidenteService(IncidenteRepository incidenteRepo,
-                            ColaboradorRepository colaboradorRepo) {
+                            ColaboradorRepository colaboradorRepo,
+                            ReporteAnalisisRepository reporteAnalisisRepo) {
         this.incidenteRepo   = incidenteRepo;
         this.colaboradorRepo = colaboradorRepo;
+        this.reporteAnalisisRepo = reporteAnalisisRepo;
     }
 
     /* ───────── Helpers ───────── */
@@ -144,7 +148,8 @@ public class IncidenteService {
         Incidente i = incidenteRepo.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Incidente no encontrado"));
         verificarAcceso(solicitante, i);
-        // Las relaciones se borran por orphanRemoval=true del entity
+        // Las relaciones se borran por orphanRemoval=true del entity, salvo los análisis IA
+        reporteAnalisisRepo.deleteAll(reporteAnalisisRepo.findByIncidenteId(id));
         incidenteRepo.delete(i);
     }
 
@@ -272,7 +277,8 @@ public class IncidenteService {
                 i.getHoraOcurrencia(),
                 i.getArea(),
                 i.getImplicadoNombre(),
-                i.getCreatedAt()
+                i.getCreatedAt(),
+                i.getEmpresa() != null ? i.getEmpresa().getNombre() : null
         );
     }
 

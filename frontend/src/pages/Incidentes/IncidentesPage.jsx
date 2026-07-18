@@ -177,14 +177,10 @@ export default function IncidentesPage() {
       fechaOcurrencia: det.fechaOcurrencia, horaOcurrencia: det.horaOcurrencia,
       area: det.area, implicadoNombre: det.implicadoNombre, createdAt: det.createdAt,
     }
-    const esNuevo = !incidentes.some(i => i.id === resumen.id)
     setIncidentes(prev => {
       const existe = prev.some(i => i.id === resumen.id)
       return existe ? prev.map(i => i.id === resumen.id ? resumen : i) : [resumen, ...prev]
     })
-    if (esNuevo) {
-      navigate(`/reportes?incidenteId=${det.id}`)
-    }
   }
 
   const handleEliminado = (id) => setIncidentes(prev => prev.filter(i => i.id !== id))
@@ -313,7 +309,9 @@ export default function IncidentesPage() {
           <table className="w-full text-sm">
             <thead>
               <tr style={{ backgroundColor: headBg }}>
-                {['Código', 'Tipo', 'Fecha', 'Área', 'Implicado', 'Estado', 'Acciones'].map(h => (
+                {[
+                  'Código', 'Tipo', 'Fecha', ...(esAdmin ? ['Empresa'] : []), 'Área', 'Implicado', 'Estado', 'Acciones'
+                ].map(h => (
                   <th key={h} className="px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wider"
                     style={{ color: headColor }}>{h}</th>
                 ))}
@@ -321,9 +319,9 @@ export default function IncidentesPage() {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={7} className="px-5 py-10 text-center text-sm" style={{ color: subColor }}>Cargando...</td></tr>
+                <tr><td colSpan={esAdmin ? 8 : 7} className="px-5 py-10 text-center text-sm" style={{ color: subColor }}>Cargando...</td></tr>
               ) : filtrados.length === 0 ? (
-                <tr><td colSpan={7} className="px-5 py-10 text-center text-sm" style={{ color: subColor }}>
+                <tr><td colSpan={esAdmin ? 8 : 7} className="px-5 py-10 text-center text-sm" style={{ color: subColor }}>
                   {busqueda || filtroTipo || filtroEstado ? 'Sin resultados con esos filtros' : 'Aún no hay incidentes registrados'}
                 </td></tr>
               ) : filtrados.map(i => (
@@ -347,6 +345,11 @@ export default function IncidentesPage() {
                       </div>
                     )}
                   </td>
+                  {esAdmin && (
+                    <td className="px-5 py-3.5 text-xs font-medium" style={{ color: rowText }}>
+                      {i.empresaNombre || <span style={{ color: subColor }}>—</span>}
+                    </td>
+                  )}
                   <td className="px-5 py-3.5 text-xs" style={{ color: rowText }}>
                     <div className="flex items-center gap-1">
                       <MapPin size={11} style={{ color: subColor }} />

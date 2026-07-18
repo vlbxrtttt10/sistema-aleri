@@ -4,12 +4,13 @@ import com.aleri.ssoma.dto.IncidenteDetalleDto;
 import com.aleri.ssoma.entity.Incidente;
 import com.aleri.ssoma.entity.FotoIncidente;
 import com.aleri.ssoma.entity.ReporteAnalisis;
+import com.aleri.ssoma.entity.Rol;
 import com.aleri.ssoma.entity.Usuario;
 import com.aleri.ssoma.repository.IncidenteRepository;
 import com.aleri.ssoma.repository.ReporteAnalisisRepository;
+import com.aleri.ssoma.service.ConfiguracionService;
 import com.aleri.ssoma.service.IncidenteService;
 import com.aleri.ssoma.service.InformePdfService;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -29,19 +30,19 @@ public class AnalisisController {
     private final ReporteAnalisisRepository analisisRepo;
     private final IncidenteService incidenteService;
     private final InformePdfService informePdfService;
+    private final ConfiguracionService configuracionService;
     private final RestTemplate restTemplate = new RestTemplate();
-
-    @Value("${app.anthropic.api-key}")
-    private String apiKey;
 
     public AnalisisController(IncidenteRepository incidenteRepo,
                               ReporteAnalisisRepository analisisRepo,
                               IncidenteService incidenteService,
-                              InformePdfService informePdfService) {
+                              InformePdfService informePdfService,
+                              ConfiguracionService configuracionService) {
         this.incidenteRepo = incidenteRepo;
         this.analisisRepo  = analisisRepo;
         this.incidenteService = incidenteService;
         this.informePdfService = informePdfService;
+        this.configuracionService = configuracionService;
     }
 
     /** Devuelve análisis cacheado si ya existe; si no, llama a Claude y lo guarda. */
@@ -86,6 +87,12 @@ public class AnalisisController {
         }
 
         content.add(Map.of("type", "text", "text", construirPrompt(inc)));
+
+        String apiKey = configuracionService.obtenerAnthropicApiKey();
+        if (apiKey == null || apiKey.isBlank()) {
+            return ResponseEntity.internalServerError()
+                .body(Map.of("mensaje", "No hay una API key de Anthropic configurada. Ve a Administradores y configúrala."));
+        }
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -151,19 +158,23 @@ public class AnalisisController {
     @DeleteMapping("/analisis/{id}")
     public ResponseEntity<?> eliminarAnalisis(@AuthenticationPrincipal Usuario usuario,
                                               @PathVariable Long id) {
+        boolean esAdmin = usuario.getRol() == Rol.ADMIN || usuario.getRol() == Rol.SUBADMIN;
         ReporteAnalisis ra = analisisRepo.findById(id).orElse(null);
-        if (ra == null || !ra.getIncidente().getEmpresa().getId().equals(usuario.getEmpresa().getId())) {
+        if (ra == null || (!esAdmin && (usuario.getEmpresa() == null
+                || !ra.getIncidente().getEmpresa().getId().equals(usuario.getEmpresa().getId())))) {
             return ResponseEntity.badRequest().body(Map.of("mensaje", "Análisis no encontrado"));
         }
         analisisRepo.delete(ra);
         return ResponseEntity.ok(Map.of("mensaje", "Análisis eliminado"));
     }
 
-    /** Historial de análisis de la empresa del usuario autenticado. */
+    /** Historial de análisis: global para ADMIN/SUBADMIN, o de la empresa del usuario autenticado. */
     @GetMapping("/historial")
     public ResponseEntity<?> historial(@AuthenticationPrincipal Usuario usuario) {
-        Long empresaId = usuario.getEmpresa().getId();
-        List<ReporteAnalisis> lista = analisisRepo.findByIncidenteEmpresaIdOrderByCreatedAtDesc(empresaId);
+        boolean esAdmin = usuario.getRol() == Rol.ADMIN || usuario.getRol() == Rol.SUBADMIN;
+        List<ReporteAnalisis> lista = esAdmin
+                ? analisisRepo.findAllByOrderByCreatedAtDesc()
+                : analisisRepo.findByIncidenteEmpresaIdOrderByCreatedAtDesc(usuario.getEmpresa().getId());
 
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
         List<Map<String, Object>> result = lista.stream().map(ra -> {
@@ -181,6 +192,9 @@ public class AnalisisController {
             item.put("codigo", ra.getIncidente().getCodigo());
             item.put("tipo", ra.getIncidente().getTipo());
             item.put("area", ra.getIncidente().getArea() != null ? ra.getIncidente().getArea() : "");
+            if (esAdmin) {
+                item.put("empresa", ra.getIncidente().getEmpresa() != null ? ra.getIncidente().getEmpresa().getNombre() : "");
+            }
             item.put("fecha", fmt.format(ra.getCreatedAt()));
             item.put("preview", preview);
             item.put("analisis", ra.getAnalisis());

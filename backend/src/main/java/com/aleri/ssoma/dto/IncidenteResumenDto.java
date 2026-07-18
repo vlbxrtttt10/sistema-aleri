@@ -16,12 +16,14 @@ public class IncidenteResumenDto {
     private String area;
     private String implicadoNombre;
     private LocalDateTime createdAt;
+    private String empresaNombre;
 
     public IncidenteResumenDto() {}
 
     public IncidenteResumenDto(Long id, String codigo, String tipo, String estado,
                                LocalDate fechaOcurrencia, String horaOcurrencia,
-                               String area, String implicadoNombre, LocalDateTime createdAt) {
+                               String area, String implicadoNombre, LocalDateTime createdAt,
+                               String empresaNombre) {
         this.id = id;
         this.codigo = codigo;
         this.tipo = tipo;
@@ -31,6 +33,7 @@ public class IncidenteResumenDto {
         this.area = area;
         this.implicadoNombre = implicadoNombre;
         this.createdAt = createdAt;
+        this.empresaNombre = empresaNombre;
     }
 
     public Long getId() { return id; }
@@ -42,6 +45,7 @@ public class IncidenteResumenDto {
     public String getArea() { return area; }
     public String getImplicadoNombre() { return implicadoNombre; }
     public LocalDateTime getCreatedAt() { return createdAt; }
+    public String getEmpresaNombre() { return empresaNombre; }
 
     public void setId(Long id) { this.id = id; }
     public void setCodigo(String v) { this.codigo = v; }
@@ -52,4 +56,5 @@ public class IncidenteResumenDto {
     public void setArea(String v) { this.area = v; }
     public void setImplicadoNombre(String v) { this.implicadoNombre = v; }
     public void setCreatedAt(LocalDateTime v) { this.createdAt = v; }
+    public void setEmpresaNombre(String v) { this.empresaNombre = v; }
 }
